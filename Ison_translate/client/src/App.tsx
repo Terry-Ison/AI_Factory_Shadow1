@@ -1,7 +1,12 @@
-import { TranslatorPage } from './pages/TranslatorPage'
+import { BaseLayout } from '@/components/layout/baseLayout'
+import { TranslatorPage } from '@/pages/TranslatorPage'
 
 function App() {
-  return <TranslatorPage />
+  return (
+    <BaseLayout>
+      <TranslatorPage />
+    </BaseLayout>
+  )
 }
 
 export default App
