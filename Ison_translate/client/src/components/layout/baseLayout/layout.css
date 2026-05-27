@@ -169,15 +169,14 @@
 }
 
 .sidebar__nav-item--active {
-  background: linear-gradient(135deg, #38bdf8, #22d3ee);
-  color: #fff;
+  background: var(--sidebar-primary);
+  color: var(--sidebar-primary-foreground);
   font-weight: 600;
-  box-shadow: 0 2px 12px rgba(56, 189, 248, 0.25);
 }
 
 .sidebar__nav-item--active:hover {
-  background: linear-gradient(135deg, #38bdf8, #22d3ee);
-  color: #fff;
+  background: var(--sidebar-primary);
+  color: var(--sidebar-primary-foreground);
 }
 
 /* ---- Spacer ---- */

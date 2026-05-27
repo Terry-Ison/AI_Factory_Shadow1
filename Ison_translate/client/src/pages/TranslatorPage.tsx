@@ -195,7 +195,7 @@ export function TranslatorPage() {
             onTargetLangChange={setTargetLang}
             onJoin={handleJoin}
           />
-          {joinError ? <p className="mt-4 text-center text-sm text-rose-400">{joinError}</p> : null}
+          {joinError ? <p className="mt-4 text-center text-sm text-destructive">{joinError}</p> : null}
         </div>
       </main>
     )
@@ -205,17 +205,17 @@ export function TranslatorPage() {
     <main className="mx-auto flex min-h-full max-w-6xl flex-col gap-4 p-4 md:p-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-white">Session {session.sessionId}</h1>
-          <p className="text-sm text-slate-400">
+          <h1 className="text-xl font-bold text-foreground">Session {session.sessionId}</h1>
+          <p className="text-sm text-muted-foreground">
             Speaking {languageLabel(session.sourceLang)} · Partner speaks{' '}
             {languageLabel(session.targetLang)}
           </p>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-muted-foreground/80">
             Share this exact session ID with your partner:{' '}
-            <span className="font-mono text-indigo-300">{session.sessionId}</span>
+            <span className="font-mono font-medium text-primary">{session.sessionId}</span>
           </p>
         </div>
-        <div className="text-right text-xs text-slate-500">
+        <div className="text-right text-xs text-muted-foreground">
           <p>User ID: {session.userId}</p>
           <p>Server: {socketConnected ? 'connected' : 'disconnected'}</p>
           <p>Mic: {mic.status}</p>
@@ -231,19 +231,19 @@ export function TranslatorPage() {
       />
 
       {statusHint ? (
-        <p className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-sm text-amber-200">
+        <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 dark:bg-amber-500/20 px-4 py-2 text-sm text-amber-700 dark:text-amber-200">
           {statusHint}
         </p>
       ) : null}
 
       {serverError ? (
-        <p className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-2 text-sm text-rose-300">
+        <p className="rounded-xl border border-destructive/30 bg-destructive/10 dark:bg-destructive/20 px-4 py-2 text-sm text-destructive-foreground">
           {serverError}
         </p>
       ) : null}
 
       {mic.error ? (
-        <p className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-2 text-sm text-rose-300">
+        <p className="rounded-xl border border-destructive/30 bg-destructive/10 dark:bg-destructive/20 px-4 py-2 text-sm text-destructive-foreground">
           {mic.error}
         </p>
       ) : null}
