@@ -18,7 +18,7 @@ export function LoginPage() {
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`flex-1 rounded-lg py-2 text-xs font-semibold transition ${
+            className={`flex-1 rounded-lg py-2 text-xs font-semibold cursor-pointer transition ${
               tab === t
                 ? 'bg-indigo-600 text-white shadow'
                 : 'text-slate-400 hover:text-white'
@@ -220,7 +220,7 @@ function SubmitButton({ loading, label }: { loading: boolean; label: string }) {
     <button
       type="submit"
       disabled={loading}
-      className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+      className="w-full cursor-pointer rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
     >
       {loading ? 'Please wait…' : label}
     </button>
