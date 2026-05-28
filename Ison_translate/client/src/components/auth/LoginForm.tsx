@@ -19,7 +19,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
             <div className="flex flex-col items-center gap-2 text-center">
               <h1 className="text-2xl font-bold">Welcome back</h1>
               <p className="text-balance text-muted-foreground">
-                Login to your Ison Translate account
+                Login to your Transly account
               </p>
             </div>
             <Field>

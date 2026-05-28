@@ -93,12 +93,12 @@ export const HISTORY_SESSIONS: HistorySession[] = [
     targetLang: 'hi',
     partnerName: 'Raj Patel',
     selfLines: [
-      line('Welcome to Ison Translate. Let me walk you through the setup.'),
+      line('Welcome to Transly. Let me walk you through the setup.'),
       line('You can share a session ID with your partner on any device.'),
       line('The microphone will stream your speech in real time.'),
     ],
     partnerLines: [
-      line('Ison Translate में आपका स्वागत है। मैं आपको सेटअप के बारे में बताती हूँ।'),
+      line('Transly में आपका स्वागत है। मैं आपको सेटअप के बारे में बताती हूँ।'),
       line('आप किसी भी डिवाइस पर अपने साथी के साथ सेशन ID साझा कर सकते हैं।'),
       line('माइक्रोफ़ोन आपकी आवाज़ को रियल टाइम में स्ट्रीम करेगा।'),
     ],
@@ -152,11 +152,11 @@ export const HISTORY_SESSIONS: HistorySession[] = [
     targetLang: 'ja',
     partnerName: 'Yuki Tanaka',
     selfLines: [
-      line('Ison Translate removes language barriers in live conversations.'),
+      line('Transly removes language barriers in live conversations.'),
       line('Latency stays under two seconds for most language pairs.'),
     ],
     partnerLines: [
-      line('Ison Translateはライブ会話の言語の壁を取り除きます。'),
+      line('Translyはライブ会話の言語の壁を取り除きます。'),
       line('ほとんどの言語ペアで遅延は2秒未満です。'),
     ],
   },

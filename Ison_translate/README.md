@@ -1,4 +1,4 @@
-# Ison Translate — AI Meeting Live Translation
+# Transly — AI Meeting Live Translation
 
 Real-time meeting translation: capture browser tab audio (Google Meet, Zoom, Teams), stream to DeepL Voice API, show live transcript cards, and play translated AI voice.
 
@@ -45,7 +45,7 @@ npm run dev
 ## Usage
 
 1. Open your meeting in a browser tab.
-2. Open Ison Translate.
+2. Open Transly.
 3. Choose target language and AI voice.
 4. Click **Start translation**.
 5. Select the meeting tab and enable **Share tab audio**.

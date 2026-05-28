@@ -1,4 +1,4 @@
-# Ison Translate — Developer Onboarding Guide
+# Transly — Developer Onboarding Guide
 
 This document explains the full codebase so a new developer can understand how the app works, where to look when debugging, and how to extend it safely.
 
@@ -6,7 +6,7 @@ This document explains the full codebase so a new developer can understand how t
 
 ## 1. What this project does
 
-**Ison Translate** is a real-time, two-way voice translation platform for two people in a shared session.
+**Transly** is a real-time, two-way voice translation platform for two people in a shared session.
 
 | User A | User B |
 |--------|--------|

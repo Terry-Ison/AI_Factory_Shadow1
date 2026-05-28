@@ -16,7 +16,7 @@ const NAV_ITEMS: NavItem[] = [
 
 export function Sidebar() {
   return (
-    <aside className="flex h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-border bg-sidebar p-4 px-3">
+    <aside className="flex w-60 shrink-0 flex-col overflow-y-auto border-r border-border bg-sidebar p-4 px-3">
       {/* Brand block */}
       <div className="flex items-center gap-2.5 px-2 pb-5">
         <svg
@@ -43,7 +43,7 @@ export function Sidebar() {
         </svg>
         <div className="flex flex-col">
           <span className="text-[15px] font-bold leading-tight tracking-tight text-sidebar-foreground">
-            Ison Translate
+            Transly
           </span>
           <span className="text-[11px] leading-tight text-muted-foreground">
             Premium Voice Translation
@@ -80,7 +80,7 @@ export function Sidebar() {
       <div className="flex flex-col gap-1 border-t border-sidebar-border pt-3">
         <button
           type="button"
-          className="mb-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-none bg-foreground px-3.5 py-3 text-sm font-bold text-background transition-all hover:-translate-y-px hover:opacity-90 active:translate-y-0"
+          className="mb-2 hidden flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-none bg-foreground px-3.5 py-3 text-sm font-bold text-background transition-all hover:-translate-y-px hover:opacity-90 active:translate-y-0"
         >
           <Sparkles size={16} />
           Go Pro

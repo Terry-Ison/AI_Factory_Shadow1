@@ -44,8 +44,8 @@ export function SessionDetail({ session, userName, onBack }: Props) {
           emptyText="No transcript recorded."
         />
         <SubtitlePanel
-          title="Translated for partner"
-          badge={`${languageLabel(session.targetLang)} → ${languageLabel(session.sourceLang)}`}
+          title="Translated"
+          badge={`${languageLabel(session.sourceLang)} → ${languageLabel(session.targetLang)}`}
           lines={session.partnerLines}
           emptyText="No translation recorded."
         />

@@ -32,7 +32,7 @@ export function Header() {
             文A
           </text>
         </svg>
-        <span className="text-base font-bold tracking-tight text-foreground">Ison Translate</span>
+        <span className="text-base font-bold tracking-tight text-foreground">Transly</span>
       </div>
 
       {/* Right — Actions */}
