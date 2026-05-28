@@ -9,12 +9,19 @@
  * of a session (see getOrCreateStream). Chunks are sent in order via sendQueue.
  */
 import WebSocket from 'ws'
+import { pack, unpack } from 'msgpackr'
 import { config } from '../config.js'
+import { logger } from '../utils/logger.js'
 
 /** Incoming mic audio from the browser (16 kHz mono PCM). */
 const SOURCE_MEDIA_TYPE = 'audio/pcm;encoding=s16le;rate=16000'
-/** Translated speech returned to the partner (WebM/Opus packets for streaming playback). */
-const TARGET_MEDIA_TYPE = 'audio/webm;codecs=opus'
+/** Translated speech as PCM — lower decode/play latency than WebM + MediaSource. */
+const TARGET_MEDIA_TYPE = 'audio/pcm;encoding=s16le;rate=24000'
+
+const CONNECT_TIMEOUT_MS = 10_000
+const RECONNECT_BASE_MS = 1_000
+const RECONNECT_MAX_MS = 30_000
+const RATE_LIMIT_BACKOFF_MS = 15_000
 
 export class DeepLVoiceClient {
   /**
@@ -33,6 +40,28 @@ export class DeepLVoiceClient {
     this.connectPromise = null
     /** Serialises chunk sends so DeepL receives audio in capture order. */
     this.sendQueue = Promise.resolve()
+    this.reconnectDelayMs = RECONNECT_BASE_MS
+    this.reconnectTimer = null
+    /** @type {((message: string) => void) | null} */
+    this.onClientError = null
+    this.rateLimitedUntil = 0
+    /** Timestamp (ms) of the most recent chunk send — used for chunk-spacing guard. */
+    this.lastChunkSentAt = 0
+    /** Duration (ms) of the most recent chunk — determines minimum inter-chunk interval. */
+    this.lastChunkDurationMs = 100
+  }
+
+  _isRateLimited() {
+    return Date.now() < this.rateLimitedUntil
+  }
+
+  _markRateLimited(err) {
+    const msg = err?.message ?? String(err)
+    if (!/too many requests|429|rate limit/i.test(msg)) return false
+    this.rateLimitedUntil = Date.now() + RATE_LIMIT_BACKOFF_MS
+    this.reconnectDelayMs = RATE_LIMIT_BACKOFF_MS
+    logger.warn('[DeepL] rate limited — pausing sends for', RATE_LIMIT_BACKOFF_MS, 'ms')
+    return true
   }
 
   /**
@@ -47,6 +76,7 @@ export class DeepLVoiceClient {
     this.connectPromise = this.connect()
     try {
       await this.connectPromise
+      this.reconnectDelayMs = RECONNECT_BASE_MS
     } finally {
       this.connectPromise = null
     }
@@ -63,15 +93,35 @@ export class DeepLVoiceClient {
     await new Promise((resolve, reject) => {
       const ws = new WebSocket(url)
       this.ws = ws
+      let settled = false
+
+      const finish = (fn, value) => {
+        if (settled) return
+        settled = true
+        clearTimeout(timer)
+        fn(value)
+      }
+
+      const timer = setTimeout(() => {
+        finish(reject, new Error('DeepL connect timeout'))
+        try {
+          ws.terminate()
+        } catch {
+          // ignore
+        }
+      }, CONNECT_TIMEOUT_MS)
 
       ws.on('open', () => {
         this.ready = true
-        resolve(undefined)
+        // Discard any chunks that queued up while connecting — they are stale
+        // and would burst through the spacing guard, causing a Timeout.
+        this.sendQueue = Promise.resolve()
+        finish(resolve, undefined)
       })
 
       ws.on('message', (raw) => {
         try {
-          const message = JSON.parse(raw.toString())
+          const message = unpack(Buffer.isBuffer(raw) ? raw : Buffer.from(raw))
           this.handleMessage(message)
         } catch (err) {
           this.onError(err instanceof Error ? err : new Error(String(err)))
@@ -80,14 +130,35 @@ export class DeepLVoiceClient {
 
       ws.on('error', (err) => {
         this.onError(err)
-        reject(err)
+        finish(reject, err)
       })
 
-      ws.on('close', () => {
+      ws.on('close', (code) => {
         this.ready = false
+        if (!settled) {
+          finish(reject, new Error(`DeepL WebSocket closed before open (${code})`))
+          return
+        }
         this.onClose()
       })
     })
+  }
+
+  _scheduleReconnect() {
+    if (this.closed || this.reconnectTimer) return
+    if (this._isRateLimited()) return
+
+    const delay = this.reconnectDelayMs
+    this.reconnectDelayMs = Math.min(this.reconnectDelayMs * 2, RECONNECT_MAX_MS)
+
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null
+      if (this.closed) return
+      this.ensureConnected().catch((err) => {
+        logger.warn('[DeepL] reconnect failed:', err.message)
+        this._scheduleReconnect()
+      })
+    }, delay)
   }
 
   /**
@@ -102,7 +173,7 @@ export class DeepLVoiceClient {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        message_format: 'json',
+        message_format: 'msgpack',
         source_media_content_type: SOURCE_MEDIA_TYPE,
         source_language: this.sourceLang,
         source_language_mode: 'fixed',
@@ -127,23 +198,35 @@ export class DeepLVoiceClient {
    */
   async sendAudioChunk(chunk) {
     if (this.closed) return
+    if (this._isRateLimited()) return
     this.sendQueue = this.sendQueue.then(() => this._sendAudioChunkNow(chunk))
     return this.sendQueue
   }
 
-  /** Sends one chunk over the open WebSocket (base64-encoded per DeepL JSON protocol). */
+  /** Sends one chunk over the open WebSocket as a MessagePack binary frame (raw bytes, no base64). */
   async _sendAudioChunkNow(chunk) {
     if (this.closed) return
-    await this.ensureConnected()
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return
+    if (this._isRateLimited()) return
 
-    this.ws.send(
-      JSON.stringify({
-        source_media_chunk: {
-          data: chunk.toString('base64'),
-        },
-      }),
-    )
+    // Connect first — then check spacing using the time of the actual send,
+    // not the time the chunk was dequeued (which would be near-zero for burst flushes).
+    await this.ensureConnected()
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      throw new Error('DeepL stream is not connected')
+    }
+
+    // Chunk-spacing guard: interval between sends must be ≥ half the duration of the prior chunk.
+    const now = Date.now()
+    const minInterval = this.lastChunkDurationMs / 2
+    if (this.lastChunkSentAt > 0 && now - this.lastChunkSentAt < minInterval) {
+      return
+    }
+
+    this.lastChunkSentAt = now
+    // bytes / 2 = samples (s16le); samples / 16000 = seconds
+    this.lastChunkDurationMs = Math.round((chunk.length / 2 / 16000) * 1000)
+
+    this.ws.send(pack({ source_media_chunk: { data: chunk } }))
   }
 
   /**
@@ -152,12 +235,12 @@ export class DeepLVoiceClient {
    */
   handleMessage(message) {
     if (message.error) {
-      this.onError(
-        new Error(
-          message.error.error_message ||
-            `DeepL error ${message.error.error_code ?? ''}`.trim(),
-        ),
+      const err = new Error(
+        message.error.error_message ||
+          `DeepL error ${message.error.error_code ?? ''}`.trim(),
       )
+      this._markRateLimited(err)
+      this.onError(err)
       return
     }
 
@@ -182,12 +265,29 @@ export class DeepLVoiceClient {
 
     if (message.target_media_chunk) {
       const chunk = message.target_media_chunk
+      // In msgpack mode DeepL sends audio as raw binary (Buffer/Uint8Array).
+      // Normalise to base64 strings so the existing client pipeline works unchanged.
+      const rawData = chunk.data ?? []
+      let data
+      if (Buffer.isBuffer(rawData) || rawData instanceof Uint8Array) {
+        data = rawData.length ? [Buffer.from(rawData).toString('base64')] : []
+      } else if (Array.isArray(rawData)) {
+        data = rawData
+          .filter((item) => item != null)
+          .map((item) =>
+            Buffer.isBuffer(item) || item instanceof Uint8Array
+              ? Buffer.from(item).toString('base64')
+              : String(item),
+          )
+      } else {
+        data = []
+      }
       this.onEvent({
         kind: 'target_media',
         language: chunk.language,
         contentType: chunk.content_type,
         headers: chunk.headers,
-        data: chunk.data ?? [],
+        data,
         duration: chunk.duration,
         text: chunk.text,
       })
@@ -200,9 +300,13 @@ export class DeepLVoiceClient {
    */
   close() {
     this.closed = true
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       try {
-        this.ws.send(JSON.stringify({ end_of_source_media: {} }))
+        this.ws.send(pack({ end_of_source_media: {} }))
       } catch {
         // ignore
       }
@@ -241,11 +345,15 @@ export function getOrCreateStream(params) {
     targetLang: params.targetLang,
     onEvent: params.onEvent,
     onError: (err) => {
-      console.error(`[DeepL ${key}]`, err.message)
-      params.onClientError?.(err.message)
+      logger.error(`[DeepL ${key}]`, err.message)
+      stream.onClientError?.(err.message)
     },
     onClose: () => {
-      clientStreams.delete(key)
+      if (stream.closed) {
+        clientStreams.delete(key)
+        return
+      }
+      stream._scheduleReconnect()
     },
   })
 

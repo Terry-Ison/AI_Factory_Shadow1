@@ -12,6 +12,7 @@ export type JoinSessionPayload = {
   userId: string
   sourceLang: string
   targetLang: string
+  authToken?: string
 }
 
 export type SessionJoinAck = {
@@ -22,6 +23,8 @@ export type SessionJoinAck = {
   isInitiator?: boolean
   participantCount?: number
   partnerConnected?: boolean
+  sourceLang?: string
+  targetLang?: string
   deeplOk?: boolean
   deeplError?: string | null
 }
@@ -62,6 +65,7 @@ export type PeerJoinedMessage = {
   type: 'peer_joined'
   peerId: string
   userId: string
+  targetLang?: string
 }
 
 export type SessionConfig = {

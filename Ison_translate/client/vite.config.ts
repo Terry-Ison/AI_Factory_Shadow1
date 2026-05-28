@@ -3,6 +3,8 @@ import react, { reactCompilerPreset } from '@vitejs/plugin-react'
 import babel from '@rolldown/plugin-babel'
 import tailwindcss from '@tailwindcss/vite'
 
+const apiTarget = 'http://localhost:3001'
+
 export default defineConfig({
   plugins: [
     react(),
@@ -13,12 +15,12 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/socket.io': {
-        target: 'http://localhost:3001',
+        target: apiTarget,
         ws: true,
+        changeOrigin: true,
       },
-      '/health': {
-        target: 'http://localhost:3001',
-      },
+      '/health': { target: apiTarget, changeOrigin: true },
+      '/api': { target: apiTarget, changeOrigin: true },
     },
   },
 })

@@ -1,4 +1,6 @@
-/** @typedef {{ socketId: string, userId: string, sourceLang: string, targetLang: string, deeplClient?: import('../deepl/deeplVoiceClient.js').DeepLVoiceClient }} SessionClient */
+import { randomUUID } from 'node:crypto'
+
+/** @typedef {{ socketId: string, userId: string, sourceLang: string, targetLang: string, dbSessionId?: string, participantDbId?: string, deeplClient?: import('../deepl/deeplVoiceClient.js').DeepLVoiceClient }} SessionClient */
 
 /** @typedef {{ id: string, clients: Map<string, SessionClient>, createdAt: number }} Session */
 
@@ -17,6 +19,17 @@ export function normalizeSessionId(sessionId) {
 }
 
 /**
+ * Create a new empty session with a server-generated UUID.
+ * @returns {{ sessionId: string, createdAt: number }}
+ */
+export function createSession() {
+  const sessionId = randomUUID()
+  const session = { id: sessionId, clients: new Map(), createdAt: Date.now() }
+  sessions.set(sessionId, session)
+  return { sessionId, createdAt: session.createdAt }
+}
+
+/**
  * Remove clients whose sockets are no longer connected.
  * @param {Session} session
  * @param {import('socket.io').Server} io
@@ -31,9 +44,26 @@ export function pruneSession(session, io) {
 }
 
 /**
+ * Evict sessions with no connected clients older than maxAgeMs.
+ * @param {number} maxAgeMs
+ * @returns {number} number of sessions removed
+ */
+export function cleanupIdleSessions(maxAgeMs) {
+  const now = Date.now()
+  let removed = 0
+  for (const [id, session] of sessions) {
+    if (session.clients.size === 0 && now - session.createdAt > maxAgeMs) {
+      sessions.delete(id)
+      removed++
+    }
+  }
+  return removed
+}
+
+/**
  * @param {string} sessionId
  * @param {string} socketId
- * @param {{ userId: string, sourceLang: string, targetLang: string }} meta
+ * @param {{ userId: string, sourceLang: string, targetLang?: string }} meta
  * @param {import('socket.io').Server} [io]
  */
 export function joinSession(sessionId, socketId, meta, io) {
@@ -64,16 +94,30 @@ export function joinSession(sessionId, socketId, meta, io) {
   if (session.clients.size >= 2) {
     const alreadyJoined = [...session.clients.values()].some((c) => c.socketId === socketId)
     if (!alreadyJoined) {
-      return { error: 'Session is full (max 2 participants). Leave and rejoin, or use a new session ID.' }
+      return {
+        error:
+          'Session is full (max 2 participants). Leave and rejoin, or use a new session ID.',
+      }
     }
   }
 
+  const mySourceLang = normalizeLang(meta.sourceLang)
   const key = clientKey(meta.userId, socketId)
+
+  // Find existing partner before adding this client
+  const existingPeer = [...session.clients.values()].find((c) => c.socketId !== socketId)
+
+  // Auto-resolve target langs from partner's source when both are present
+  let myTargetLang = existingPeer ? existingPeer.sourceLang : mySourceLang
+  if (existingPeer) {
+    existingPeer.targetLang = mySourceLang
+  }
+
   const entry = {
     socketId,
     userId: meta.userId,
-    sourceLang: normalizeLang(meta.sourceLang),
-    targetLang: normalizeLang(meta.targetLang),
+    sourceLang: mySourceLang,
+    targetLang: myTargetLang,
   }
 
   session.clients.set(key, entry)
@@ -88,6 +132,8 @@ export function joinSession(sessionId, socketId, meta, io) {
     isInitiator,
     peer: peers[0] ?? null,
     participantCount: session.clients.size,
+    resolvedTargetLang: myTargetLang,
+    peerResolvedTargetLang: existingPeer ? mySourceLang : null,
   }
 }
 

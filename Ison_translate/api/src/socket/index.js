@@ -1,4 +1,5 @@
-import { assertDeepLConfigured, config } from '../config.js'
+import { verifyToken } from '../auth/jwt.js'
+import { config } from '../config.js'
 import {
   closeSessionStreams,
   closeStream,
@@ -6,6 +7,7 @@ import {
   segmentsToText,
 } from '../deepl/deeplVoiceClient.js'
 import { getDeepLStatus, verifyDeepLAccess } from '../deepl/verifyDeepL.js'
+import { createAudioRateLimiter } from '../middleware/socketRateLimit.js'
 import {
   getClient,
   getPeer,
@@ -16,20 +18,44 @@ import {
   normalizeLang,
   normalizeSessionId,
 } from '../rooms/sessionManager.js'
+import {
+  appendSourceAudio,
+  appendTargetTts,
+  appendTranscript,
+  addParticipant,
+  closeParticipantRecordings,
+  endParticipant,
+  endSession,
+  ensureSession,
+  openParticipantRecordings,
+  packetsToBuffers,
+} from '../persistence/index.js'
 import { relayRtcSignal } from './rtcSignaling.js'
+
+const { checkAudioRate, clearSocket: clearAudioRate } = createAudioRateLimiter()
 
 /**
  * @param {import('socket.io').Server} io
  */
 export function registerSocketHandlers(io) {
   io.on('connection', (socket) => {
-    socket.on('join_session', (payload, ack) => {
+    socket.on('join_session', async (payload, ack) => {
       try {
         const rawSessionId = String(payload?.sessionId ?? '').trim()
         const sessionId = normalizeSessionId(rawSessionId)
-        const userId = String(payload?.userId ?? socket.id).trim()
         const sourceLang = normalizeLang(payload?.sourceLang)
-        const targetLang = normalizeLang(payload?.targetLang)
+
+        // Prefer stable account id when a valid JWT is supplied
+        let accountUserId = null
+        let displayName = null
+        if (payload?.authToken) {
+          const claims = verifyToken(payload.authToken)
+          if (claims) {
+            accountUserId = claims.sub
+            displayName = claims.displayName
+          }
+        }
+        const userId = accountUserId ?? String(payload?.userId ?? socket.id).trim()
 
         if (!sessionId) {
           ack?.({ ok: false, error: 'sessionId is required' })
@@ -39,7 +65,7 @@ export function registerSocketHandlers(io) {
         const result = joinSession(
           sessionId,
           socket.id,
-          { userId, sourceLang, targetLang },
+          { userId, sourceLang },
           io,
         )
 
@@ -50,7 +76,8 @@ export function registerSocketHandlers(io) {
 
         socket.join(result.sessionId)
 
-        const deepl = getDeepLStatus()
+        const status = getDeepLStatus()
+        const deepl = status.checked ? status : await verifyDeepLAccess()
 
         ack?.({
           ok: true,
@@ -60,11 +87,23 @@ export function registerSocketHandlers(io) {
           isInitiator: result.isInitiator,
           participantCount: result.participantCount,
           partnerConnected: result.participantCount > 1,
+          sourceLang,
+          targetLang: result.resolvedTargetLang,
           deeplOk: deepl.ok,
           deeplError: deepl.error,
         })
 
         broadcastSessionState(io, result.sessionId)
+
+        if (result.peer) {
+          io.to(result.peer.socketId).emit('peer_joined', {
+            type: 'peer_joined',
+            peerId: socket.id,
+            userId,
+            // Inform first user their target lang is now resolved
+            targetLang: result.peerResolvedTargetLang,
+          })
+        }
 
         if (result.peer && config.deeplAuthKey) {
           preconnectDeepL(io, result.sessionId, socket.id)
@@ -74,6 +113,16 @@ export function registerSocketHandlers(io) {
         if (!deepl.checked) {
           void verifyDeepLAccess()
         }
+
+        void persistParticipantJoin(socket.id, result.sessionId, {
+          userId,
+          clientId: result.clientId,
+          sourceLang,
+          targetLang: result.resolvedTargetLang,
+          isInitiator: result.isInitiator,
+          accountUserId,
+          displayName,
+        })
       } catch (err) {
         ack?.({
           ok: false,
@@ -82,16 +131,26 @@ export function registerSocketHandlers(io) {
       }
     })
 
-    socket.on('audio_chunk', async (chunk) => {
+    socket.on('audio_chunk', (chunk) => {
       try {
+        const buffer = normalizeAudioChunk(chunk)
+        if (!buffer.length) return
+
+        if (!checkAudioRate(socket.id, buffer.length)) {
+          emitError(socket, 'Audio rate limit exceeded. Slow down or check your microphone.')
+          return
+        }
+
         if (!config.deeplAuthKey) {
           emitError(socket, 'DeepL API key is not configured on the server (api/.env)')
           return
         }
 
-        const deepl = getDeepLStatus().checked ? getDeepLStatus() : await verifyDeepLAccess()
-        if (!deepl.ok) {
-          emitError(socket, deepl.error ?? 'DeepL is not available')
+        const status = getDeepLStatus()
+        if (!status.checked) {
+          void verifyDeepLAccess()
+        } else if (!status.ok) {
+          emitError(socket, status.error ?? 'DeepL is not available')
           return
         }
 
@@ -106,34 +165,33 @@ export function registerSocketHandlers(io) {
         const peer = getPeer(session, socket.id)
         if (!speaker) return
 
-        if (!peer) {
-          socket.emit('session_status', {
-            type: 'session_status',
-            message: 'Waiting for a partner to join the same session ID before translation can start.',
-          })
-          return
-        }
-
-        const buffer = normalizeAudioChunk(chunk)
-        if (!buffer.length) return
+        // No partner yet — silently discard; client already blocks mic until partner connects
+        if (!peer) return
 
         const targetLang = speaker.targetLang
 
-        const stream = getOrCreateStream({
-          sessionId: session.id,
-          socketId: socket.id,
-          sourceLang: speaker.sourceLang,
-          targetLang,
-          onEvent: (event) => {
-            handleDeepLEvent(io, socket.id, peer.client.socketId, event)
-          },
-          onClientError: (message) => {
-            emitError(io.to(socket.id), message)
-          },
-        })
+        let stream = speaker.deeplClient
+        if (!stream) {
+          stream = getOrCreateStream({
+            sessionId: session.id,
+            socketId: socket.id,
+            sourceLang: speaker.sourceLang,
+            targetLang,
+            onEvent: (event) => {
+              handleDeepLEvent(io, socket.id, peer.client.socketId, event)
+            },
+            onClientError: (message) => {
+              emitError(io.to(socket.id), message)
+            },
+          })
+          speaker.deeplClient = stream
+        }
 
-        speaker.deeplClient = stream
-        await stream.sendAudioChunk(buffer)
+        appendSourceAudio(socket.id, buffer)
+
+        void stream.sendAudioChunk(buffer).catch((err) => {
+          emitError(socket, err instanceof Error ? err.message : 'Audio processing failed')
+        })
       } catch (err) {
         emitError(socket, err instanceof Error ? err.message : 'Audio processing failed')
       }
@@ -150,6 +208,7 @@ export function registerSocketHandlers(io) {
     })
 
     socket.on('disconnect', () => {
+      clearAudioRate(socket.id)
       cleanupSocket(io, socket)
     })
   })
@@ -217,10 +276,13 @@ function emitError(target, message) {
  * @param {Record<string, unknown>} event
  */
 function handleDeepLEvent(io, speakerSocketId, partnerSocketId, event) {
+  const speakerCtx = getSessionBySocket(speakerSocketId)
+  const speaker = speakerCtx ? getClient(speakerCtx.session, speakerSocketId) : null
+  const partner = speakerCtx ? getPeer(speakerCtx.session, speakerSocketId) : null
+
   if (event.kind === 'source_transcript') {
     const concluded = segmentsToText(event.concluded)
-    const tentative = segmentsToText(event.tentative)
-    const transcript = [concluded, tentative].filter(Boolean).join(' ').trim()
+    const transcript = concluded
     if (!transcript) return
 
     io.to(speakerSocketId).emit('self_transcript', {
@@ -228,12 +290,22 @@ function handleDeepLEvent(io, speakerSocketId, partnerSocketId, event) {
       transcript,
       isFinal: Boolean(concluded),
     })
+
+    if (speaker?.dbSessionId) {
+      void appendTranscript({
+        sessionDbId: speaker.dbSessionId,
+        participantDbId: speaker.participantDbId,
+        role: 'source',
+        language: speaker.sourceLang,
+        text: transcript,
+        isFinal: true,
+      })
+    }
   }
 
   if (event.kind === 'target_transcript') {
     const concluded = segmentsToText(event.concluded)
-    const tentative = segmentsToText(event.tentative)
-    const translation = [concluded, tentative].filter(Boolean).join(' ').trim()
+    const translation = concluded
     if (!translation) return
 
     io.to(partnerSocketId).emit('translation_result', {
@@ -241,17 +313,30 @@ function handleDeepLEvent(io, speakerSocketId, partnerSocketId, event) {
       translation,
       isFinal: Boolean(concluded),
     })
+
+    if (speaker?.dbSessionId && partner?.client) {
+      void appendTranscript({
+        sessionDbId: speaker.dbSessionId,
+        participantDbId: partner.client.participantDbId,
+        role: 'translation',
+        language: speaker.targetLang,
+        text: translation,
+        isFinal: true,
+      })
+    }
   }
 
   if (event.kind === 'target_media') {
     const packets = event.data ?? []
     if (!packets.length) return
 
+    appendTargetTts(partnerSocketId, packetsToBuffers(packets))
+
     io.to(partnerSocketId).emit('translation_result', {
       type: 'translation_result',
       translation: event.text ?? '',
       audioChunks: packets,
-      audioContentType: event.contentType ?? 'audio/webm;codecs=opus',
+      audioContentType: event.contentType ?? 'audio/pcm;encoding=s16le;rate=24000',
       isFinal: false,
     })
   }
@@ -261,9 +346,49 @@ function handleDeepLEvent(io, speakerSocketId, partnerSocketId, event) {
  * @param {import('socket.io').Server} io
  * @param {import('socket.io').Socket} socket
  */
+async function persistParticipantJoin(socketId, sessionSlug, meta) {
+  const dbSession = await ensureSession(sessionSlug)
+  if (!dbSession) return
+
+  const participant = await addParticipant({
+    sessionDbId: dbSession.id,
+    userId: meta.userId,
+    clientId: meta.clientId,
+    sourceLang: meta.sourceLang,
+    targetLang: meta.targetLang,
+    isInitiator: meta.isInitiator,
+    accountUserId: meta.accountUserId ?? null,
+  })
+  if (!participant) return
+
+  const ctx = getSessionBySocket(socketId)
+  if (!ctx) return
+
+  const client = getClient(ctx.session, socketId)
+  if (!client) return
+
+  client.dbSessionId = dbSession.id
+  client.participantDbId = participant.id
+
+  await openParticipantRecordings({
+    socketId,
+    sessionDbId: dbSession.id,
+    participantDbId: participant.id,
+  })
+}
+
 function cleanupSocket(io, socket) {
   const result = leaveSession(socket.id)
   if (!result) return
+
+  const leaving = result.leaving
+  if (leaving?.participantDbId) {
+    void endParticipant(leaving.participantDbId)
+  }
+  void closeParticipantRecordings(socket.id)
+  if (result.sessionEmpty && leaving?.dbSessionId) {
+    void endSession(leaving.dbSessionId)
+  }
 
   closeStream(result.sessionId, socket.id)
 
@@ -299,5 +424,3 @@ function normalizeAudioChunk(chunk) {
   }
   return Buffer.alloc(0)
 }
-
-export { assertDeepLConfigured }

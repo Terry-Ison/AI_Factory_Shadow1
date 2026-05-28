@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { MicStatus } from '../types'
 
 const TARGET_SAMPLE_RATE = 16000
-const CHUNK_SAMPLES = 1280
+const CHUNK_SAMPLES = 1600
 
 function floatTo16BitPcm(input: Float32Array) {
   const pcm = new Int16Array(input.length)

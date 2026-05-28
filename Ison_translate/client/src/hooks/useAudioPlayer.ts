@@ -20,6 +20,12 @@ function normalizeMimeType(contentType?: string) {
   return cleaned
 }
 
+/** Parse sample rate from DeepL PCM content-type, e.g. audio/pcm;encoding=s16le;rate=24000 */
+function pcmSampleRateFromContentType(contentType?: string) {
+  const match = contentType?.match(/rate=(\d+)/i)
+  return match ? Number(match[1]) : PCM_SAMPLE_RATE
+}
+
 function pcmToFloat32(bytes: Uint8Array) {
   const aligned = bytes.byteOffset % 2 === 0 ? bytes : bytes.slice()
   const int16 = new Int16Array(aligned.buffer, aligned.byteOffset, aligned.byteLength / 2)
@@ -42,8 +48,9 @@ class TranslatedAudioPlayer {
   private pcmContext: AudioContext | null = null
   private pcmQueue: Promise<void> = Promise.resolve()
   private pcmNextStart = 0
-  private pcmPending: Uint8Array[] = []
-  private pcmFlushTimer: ReturnType<typeof setTimeout> | null = null
+  private pcmCoalesceParts: Uint8Array[] = []
+  private pcmCoalesceRate = PCM_SAMPLE_RATE
+  private pcmCoalesceTimer: ReturnType<typeof setTimeout> | null = null
 
   constructor() {
     this.audioEl = document.createElement('audio')
@@ -69,9 +76,19 @@ class TranslatedAudioPlayer {
 
     const kind = normalizeMimeType(contentType)
     if (kind === 'pcm') {
-      for (const chunk of chunks) {
-        this.enqueuePcmBytes(base64ToBytes(chunk))
+      const sampleRate = pcmSampleRateFromContentType(contentType)
+      // DeepL sends many small PCM sub-packets per message; merge into one buffer
+      // so Web Audio schedules one continuous segment instead of N×10ms gaps.
+      const parts = chunks.map((c) => base64ToBytes(c))
+      const totalBytes = parts.reduce((sum, p) => sum + p.length, 0)
+      if (!totalBytes) return
+      const merged = new Uint8Array(totalBytes)
+      let offset = 0
+      for (const part of parts) {
+        merged.set(part, offset)
+        offset += part.length
       }
+      this.schedulePcmCoalesced(merged, sampleRate)
       return
     }
 
@@ -141,52 +158,70 @@ class TranslatedAudioPlayer {
     }
   }
 
-  private enqueuePcmBytes(bytes: Uint8Array, sampleRate = PCM_SAMPLE_RATE) {
-    this.pcmPending.push(bytes)
-    if (this.pcmFlushTimer) clearTimeout(this.pcmFlushTimer)
-    this.pcmFlushTimer = setTimeout(() => this.flushPcm(sampleRate), 60)
+  private schedulePcmCoalesced(bytes: Uint8Array, sampleRate: number) {
+    this.pcmCoalesceParts.push(bytes)
+    this.pcmCoalesceRate = sampleRate
+    if (this.pcmCoalesceTimer) return
+    this.pcmCoalesceTimer = setTimeout(() => this.flushPcmCoalesce(), 30)
   }
 
-  private flushPcm(sampleRate: number) {
-    if (!this.pcmPending.length) return
-
-    const merged = new Uint8Array(this.pcmPending.reduce((sum, c) => sum + c.length, 0))
+  private flushPcmCoalesce() {
+    this.pcmCoalesceTimer = null
+    const parts = this.pcmCoalesceParts
+    this.pcmCoalesceParts = []
+    if (!parts.length) return
+    const totalBytes = parts.reduce((sum, p) => sum + p.length, 0)
+    if (!totalBytes) return
+    const merged = new Uint8Array(totalBytes)
     let offset = 0
-    for (const chunk of this.pcmPending) {
-      merged.set(chunk, offset)
-      offset += chunk.length
+    for (const part of parts) {
+      merged.set(part, offset)
+      offset += part.length
     }
-    this.pcmPending = []
+    this.enqueuePcmBytes(merged, this.pcmCoalesceRate)
+  }
 
-    this.pcmQueue = this.pcmQueue.then(async () => {
-      if (!this.pcmContext) {
-        this.pcmContext = new AudioContext()
-      }
-      const ctx = this.pcmContext
-      if (ctx.state === 'suspended') await ctx.resume()
+  private enqueuePcmBytes(bytes: Uint8Array, sampleRate = PCM_SAMPLE_RATE) {
+    this.pcmQueue = this.pcmQueue.then(() => this.playPcmChunk(bytes, sampleRate))
+  }
 
-      const float32 = pcmToFloat32(merged)
-      if (!float32.length) return
+  private async playPcmChunk(bytes: Uint8Array, sampleRate: number) {
+    if (!bytes.length) return
 
-      const buffer = ctx.createBuffer(1, float32.length, sampleRate)
-      buffer.copyToChannel(float32, 0)
+    if (!this.pcmContext) {
+      this.pcmContext = new AudioContext()
+    }
+    const ctx = this.pcmContext
+    if (ctx.state === 'suspended') await ctx.resume()
 
-      const source = ctx.createBufferSource()
-      source.buffer = buffer
-      source.connect(ctx.destination)
+    const float32 = pcmToFloat32(bytes)
+    if (!float32.length) return
 
-      const now = ctx.currentTime
-      if (this.pcmNextStart < now - 0.15) {
-        this.pcmNextStart = now
-      }
-      const startAt = Math.max(now, this.pcmNextStart)
-      source.start(startAt)
-      this.pcmNextStart = startAt + buffer.duration
-    })
+    const buffer = ctx.createBuffer(1, float32.length, sampleRate)
+    buffer.copyToChannel(float32, 0)
+
+    const source = ctx.createBufferSource()
+    source.buffer = buffer
+    source.connect(ctx.destination)
+
+    const now = ctx.currentTime
+    const queuedAhead = this.pcmNextStart - now
+    if (queuedAhead > 1.5 || this.pcmNextStart < now - 0.15) {
+      this.pcmNextStart = now
+      if (queuedAhead > 1.5) return // discard stale audio
+    }
+    const startAt = Math.max(now, this.pcmNextStart)
+    source.start(startAt)
+    this.pcmNextStart = startAt + buffer.duration
+
   }
 
   destroy() {
-    if (this.pcmFlushTimer) clearTimeout(this.pcmFlushTimer)
+    if (this.pcmCoalesceTimer) {
+      clearTimeout(this.pcmCoalesceTimer)
+      this.pcmCoalesceTimer = null
+    }
+    this.pcmCoalesceParts = []
     this.resetMediaSource()
     this.audioEl.pause()
     this.audioEl.removeAttribute('src')

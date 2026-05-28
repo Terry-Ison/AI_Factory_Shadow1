@@ -2,6 +2,7 @@
 
 @theme {
   --font-sans: 'Segoe UI', system-ui, sans-serif;
+  --font-display: 'Fredoka', system-ui, sans-serif;
   --color-surface: #0f1419;
   --color-surface-elevated: #1a2332;
   --color-border: #2d3a4f;
@@ -19,7 +20,13 @@ html,
 body,
 #root {
   height: 100%;
+  min-height: 0;
   margin: 0;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
 }
 
 body {

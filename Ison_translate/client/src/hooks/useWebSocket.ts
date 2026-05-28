@@ -22,16 +22,28 @@ type Handlers = {
   onErrorMessage?: (message: string) => void
 }
 
-const CONNECT_TIMEOUT_MS = 10000
+const CONNECT_TIMEOUT_MS = 20000
 const JOIN_TIMEOUT_MS = 10000
 
 let sharedSocket: Socket | null = null
 let listenerCount = 0
+/** Dedupes concurrent connect() calls (e.g. React Strict Mode double-mount). */
+let inflightConnect: Promise<void> | null = null
+
+function destroySharedSocket() {
+  inflightConnect = null
+  if (!sharedSocket) return
+  sharedSocket.removeAllListeners()
+  sharedSocket.disconnect()
+  sharedSocket = null
+}
 
 function getSharedSocket() {
   if (!sharedSocket) {
+    // Polling first is more reliable through Vite's dev proxy; upgrade to WS after.
     sharedSocket = io(API_URL, {
-      transports: ['websocket', 'polling'],
+      path: '/socket.io',
+      transports: ['polling', 'websocket'],
       autoConnect: false,
       reconnection: true,
       reconnectionAttempts: 10,
@@ -51,9 +63,51 @@ function withTimeout<T>(promise: Promise<T>, ms: number, message: string) {
   ])
 }
 
+function connectShared(): Promise<void> {
+  const socket = getSharedSocket()
+  if (socket.connected) return Promise.resolve()
+
+  if (inflightConnect) return inflightConnect
+
+  inflightConnect = withTimeout(
+    new Promise<void>((resolve, reject) => {
+      let settled = false
+
+      const finish = (fn: () => void) => {
+        if (settled) return
+        settled = true
+        cleanup()
+        fn()
+      }
+
+      const onConnect = () => finish(() => resolve())
+      const onError = (err: Error) => finish(() => reject(err))
+
+      const cleanup = () => {
+        socket.off('connect', onConnect)
+        socket.off('connect_error', onError)
+      }
+
+      socket.on('connect', onConnect)
+      socket.on('connect_error', onError)
+      socket.connect()
+    }),
+    CONNECT_TIMEOUT_MS,
+    'Timed out connecting to server. Is the API running on port 3001?',
+  ).catch((err) => {
+    // Force a fresh socket on the next attempt
+    destroySharedSocket()
+    throw err
+  })
+
+  return inflightConnect.finally(() => {
+    inflightConnect = null
+  })
+}
+
 export function useWebSocket(handlers: Handlers) {
   const handlersRef = useRef(handlers)
-  const [connected, setConnected] = useState(false)
+  const [connected, setConnected] = useState(() => sharedSocket?.connected ?? false)
   const joinPayloadRef = useRef<JoinSessionPayload | null>(null)
   const activeSessionRef = useRef(false)
 
@@ -122,54 +176,21 @@ export function useWebSocket(handlers: Handlers) {
       socket.removeAllListeners('session_state')
       socket.removeAllListeners('error_message')
       socket.removeAllListeners('session_status')
-
-      if (listenerCount <= 0) {
-        socket.disconnect()
-        sharedSocket = null
-        listenerCount = 0
-      }
+      // Do NOT destroy the shared socket here — React Strict Mode unmounts/remounts
+      // in dev and would kill an in-flight connection. Only disconnect() on explicit leave.
     }
   }, [])
 
-  const connect = useCallback(() => {
-    return withTimeout(
-      new Promise<void>((resolve, reject) => {
-        const socket = getSharedSocket()
-
-        if (socket.connected) {
-          resolve()
-          return
-        }
-
-        const onConnect = () => {
-          cleanup()
-          resolve()
-        }
-
-        const onError = (err: Error) => {
-          cleanup()
-          reject(err)
-        }
-
-        const cleanup = () => {
-          socket.off('connect', onConnect)
-          socket.off('connect_error', onError)
-        }
-
-        socket.on('connect', onConnect)
-        socket.on('connect_error', onError)
-        socket.connect()
-      }),
-      CONNECT_TIMEOUT_MS,
-      'Timed out connecting to server. Is the API running on port 3001?',
-    )
-  }, [])
+  const connect = useCallback(() => connectShared(), [])
 
   const disconnect = useCallback(() => {
     activeSessionRef.current = false
     joinPayloadRef.current = null
-    getSharedSocket().emit('leave_session')
-    getSharedSocket().disconnect()
+    if (sharedSocket?.connected) {
+      sharedSocket.emit('leave_session')
+    }
+    destroySharedSocket()
+    setConnected(false)
   }, [])
 
   const joinSession = useCallback((payload: JoinSessionPayload) => {
@@ -195,12 +216,13 @@ export function useWebSocket(handlers: Handlers) {
   }, [])
 
   const sendAudioChunk = useCallback((chunk: ArrayBuffer) => {
-    if (!getSharedSocket().connected) return
-    getSharedSocket().emit('audio_chunk', new Uint8Array(chunk))
+    if (!sharedSocket?.connected) return
+    sharedSocket.emit('audio_chunk', new Uint8Array(chunk))
   }, [])
 
   const sendWebRtcSignal = useCallback((signal: Omit<WebRtcSignalMessage, 'from'>) => {
-    getSharedSocket().emit('webrtc_signal', signal)
+    if (!sharedSocket?.connected) return
+    sharedSocket.emit('webrtc_signal', signal)
   }, [])
 
   return {

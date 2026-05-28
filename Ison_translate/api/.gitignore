@@ -32,3 +32,10 @@ Thumbs.db
 
 # TypeScript
 *.tsbuildinfo
+
+# debug audio recordings (legacy)
+recordings/
+
+# Prisma / persistence
+data/
+storage/

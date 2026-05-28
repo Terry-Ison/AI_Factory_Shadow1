@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum SessionStatus {
+  pending
+  active
+  ended
+}
+
+enum TranscriptRole {
+  source
+  translation
+}
+
+enum AudioKind {
+  source_uplink
+  target_tts
+}
+
+model Session {
+  id        String        @id @default(cuid())
+  sessionId String        @unique
+  status    SessionStatus @default(pending)
+  startedAt DateTime      @default(now())
+  endedAt   DateTime?
+
+  participants       Participant[]
+  transcriptSegments TranscriptSegment[]
+  audioRecordings    AudioRecording[]
+}
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  passwordHash      String
+  displayName       String
+  defaultSourceLang String   @default("en")
+  defaultTargetLang String   @default("es")
+  createdAt         DateTime @default(now())
+
+  participants Participant[]
+}
+
+model Participant {
+  id            String    @id @default(cuid())
+  sessionId     String
+  userId        String
+  clientId      String
+  sourceLang    String
+  targetLang    String
+  isInitiator   Boolean   @default(false)
+  joinedAt      DateTime  @default(now())
+  leftAt        DateTime?
+  accountUserId String?
+
+  session            Session             @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  accountUser        User?               @relation(fields: [accountUserId], references: [id], onDelete: SetNull)
+  transcriptSegments TranscriptSegment[]
+  audioRecordings    AudioRecording[]
+
+  @@index([sessionId])
+  @@index([userId])
+  @@index([accountUserId])
+}
+
+model TranscriptSegment {
+  id            String         @id @default(cuid())
+  sessionId     String
+  participantId String?
+  role          TranscriptRole
+  language      String
+  text          String         @db.Text
+  isFinal       Boolean        @default(true)
+  sequence      Int
+  recordedAt    DateTime       @default(now())
+
+  session     Session      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  participant Participant? @relation(fields: [participantId], references: [id], onDelete: SetNull)
+
+  @@index([sessionId, recordedAt])
+}
+
+model AudioRecording {
+  id            String    @id @default(cuid())
+  sessionId     String
+  participantId String?
+  kind          AudioKind
+  contentType   String
+  sampleRate    Int
+  filePath      String
+  byteLength    Int       @default(0)
+  durationMs    Int?
+  createdAt     DateTime  @default(now())
+  finalizedAt   DateTime?
+
+  session     Session      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  participant Participant? @relation(fields: [participantId], references: [id], onDelete: SetNull)
+
+  @@index([sessionId])
+}

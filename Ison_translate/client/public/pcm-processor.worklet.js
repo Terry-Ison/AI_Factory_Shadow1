@@ -1,5 +1,6 @@
 const TARGET_SAMPLE_RATE = 16000
-const CHUNK_SAMPLES = 1280 // 80ms at 16kHz
+// DeepL Voice: send 50–250ms chunks; ~100ms balances latency vs rate limits
+const CHUNK_SAMPLES = 1600
 
 function resampleTo16k(input, inputRate) {
   if (inputRate === TARGET_SAMPLE_RATE) return input
