@@ -12,6 +12,7 @@ import authRouter from './routes/auth.js'
 import historyRouter from './routes/history.js'
 import sessionsRouter from './routes/sessions.js'
 import { disconnectPrisma } from './persistence/prisma.js'
+import { getDatabaseStatus, verifyDatabaseConnection } from './utils/verifyDatabase.js'
 import { cleanupIdleSessions, sessionCount } from './rooms/sessionManager.js'
 import { registerSocketHandlers } from './socket/index.js'
 import { logger } from './utils/logger.js'
@@ -42,8 +43,13 @@ app.use(
 app.get('/health', async (_req, res) => {
   const status = getDeepLStatus()
   const deepl = status.checked ? status : await verifyDeepLAccess()
+  const dbStatus = getDatabaseStatus()
+  const db = dbStatus.checked ? dbStatus : await verifyDatabaseConnection()
   res.json({
     ok: true,
+    databaseConfigured: Boolean(config.databaseUrl),
+    databaseOk: db.ok,
+    databaseError: db.error,
     deeplConfigured: Boolean(config.deeplAuthKey),
     deeplOk: deepl.ok,
     deeplError: deepl.error,
@@ -53,8 +59,13 @@ app.get('/health', async (_req, res) => {
 app.get('/admin/health', async (_req, res) => {
   const status = getDeepLStatus()
   const deepl = status.checked ? status : await verifyDeepLAccess()
+  const dbStatus = getDatabaseStatus()
+  const db = dbStatus.checked ? dbStatus : await verifyDatabaseConnection()
   res.json({
     ok: true,
+    databaseConfigured: Boolean(config.databaseUrl),
+    databaseOk: db.ok,
+    databaseError: db.error,
     deeplConfigured: Boolean(config.deeplAuthKey),
     deeplOk: deepl.ok,
     deeplError: deepl.error,
@@ -90,6 +101,19 @@ process.on('SIGTERM', () => {
 
 httpServer.listen(config.port, () => {
   logger.info(`API listening on http://localhost:${config.port}`)
+
+  void verifyDatabaseConnection().then((db) => {
+    if (!config.databaseUrl) {
+      logger.warn('DATABASE_URL is not set. Copy api/.env.example to api/.env')
+      return
+    }
+    if (!db.ok) {
+      logger.error(`Database is NOT reachable: ${db.error}`)
+    } else {
+      logger.info('Database connection verified')
+    }
+  })
+
   void verifyDeepLAccess().then((deepl) => {
     if (!config.deeplAuthKey) {
       logger.warn('DEEPL_AUTH_KEY is not set. Copy api/.env.example to api/.env')
