@@ -88,12 +88,17 @@ export function TranslatorPage() {
   const [hasLeft, setHasLeft] = useState(false)
 
   const autoJoinAbortRef = useRef<AbortController | null>(null)
-  const userIdRef = useRef(
-    user?.id ??
-      (isGuest
-        ? `guest-${Math.random().toString(36).slice(2, 9)}`
-        : `anon-${Math.random().toString(36).slice(2, 9)}`),
-  )
+  const [stableUserId] = useState<string>(() => {
+    if (user?.id) return user.id
+    const suffix = Math.random().toString(36).slice(2, 9)
+    return isGuest ? `guest-${suffix}` : `anon-${suffix}`
+  })
+  const userIdRef = useRef(stableUserId)
+  const setVisibleServerError = useCallback((message: string | null) => {
+    const normalized = message?.trim().toLowerCase()
+    if (normalized === 'timeout.' || normalized === 'timeout') return
+    setServerError(message)
+  }, [])
 
   const { enqueueTranslatedAudio, prime: primeAudio } = useAudioPlayer()
 
@@ -126,7 +131,7 @@ export function TranslatorPage() {
     onPeerLeft: () => setPartnerConnected(false),
     onSessionState: (msg) => setPartnerConnected(msg.partnerConnected),
     onConnectedChange: setSocketConnected,
-    onErrorMessage: (msg) => setServerError(msg),
+    onErrorMessage: (msg) => setVisibleServerError(msg),
   })
 
   const mic = useMicCapture({
@@ -147,7 +152,7 @@ export function TranslatorPage() {
   // Core join logic — accepts an explicit session ID
   const joinSession = useCallback(
     async (sessionId: string) => {
-      setServerError(null)
+      setVisibleServerError(null)
       setJoining(true)
       try {
         await ws.connect()
@@ -161,10 +166,10 @@ export function TranslatorPage() {
         })
 
         if (!ack.ok || !ack.clientId || !ack.sessionId) {
-          setServerError(ack.error ?? 'Could not join session')
+          setVisibleServerError(ack.error ?? 'Could not join session')
           return
         }
-        if (ack.deeplOk === false && ack.deeplError) setServerError(ack.deeplError)
+        if (ack.deeplOk === false && ack.deeplError) setVisibleServerError(ack.deeplError)
 
         const resolvedTarget = ack.targetLang ?? srcLang
         setTgtLang(resolvedTarget)
@@ -178,12 +183,12 @@ export function TranslatorPage() {
         })
         setPartnerConnected(Boolean(ack.partnerConnected ?? (ack.participantCount ?? 1) > 1))
       } catch (err) {
-        setServerError(err instanceof Error ? err.message : 'Failed to join session')
+        setVisibleServerError(err instanceof Error ? err.message : 'Failed to join session')
       } finally {
         setJoining(false)
       }
     },
-    [srcLang, ws, primeAudio, token],
+    [srcLang, ws, primeAudio, token, setVisibleServerError],
   )
 
   // Auto-join after mount (delay avoids React Strict Mode killing socket mid-connect)
@@ -208,7 +213,7 @@ export function TranslatorPage() {
           await joinSession(sessionId)
         } catch (err) {
           if (ac.signal.aborted) return
-          setServerError(err instanceof Error ? err.message : 'Auto-join failed')
+          setVisibleServerError(err instanceof Error ? err.message : 'Auto-join failed')
         }
       }
 
@@ -230,19 +235,19 @@ export function TranslatorPage() {
     setSelfLines([])
     setPartnerLines([])
     setRtcSignal(null)
-    setServerError(null)
+    setVisibleServerError(null)
     setTgtLang(srcLang)
     setHasLeft(true)
   }, [mic, ws, srcLang])
 
   const startNewSession = useCallback(async () => {
     setHasLeft(false)
-    setServerError(null)
+    setVisibleServerError(null)
     try {
       const sessionId = await generateSessionId()
       await joinSession(sessionId)
     } catch (err) {
-      setServerError(err instanceof Error ? err.message : 'Could not create session')
+      setVisibleServerError(err instanceof Error ? err.message : 'Could not create session')
     }
   }, [joinSession])
 
@@ -258,7 +263,7 @@ export function TranslatorPage() {
       setSelfLines([])
       setPartnerLines([])
       setRtcSignal(null)
-      setServerError(null)
+      setVisibleServerError(null)
       setTgtLang(srcLang)
 
       await joinSession(newSessionId)
@@ -291,27 +296,35 @@ export function TranslatorPage() {
           onToggleMute={() => {}}
           onJoinDifferent={() => setShowJoinModal(true)}
         />
-        <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-5 p-8 text-center">
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-6 p-8 text-center">
           {serverError && (
-            <p className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-2 text-sm text-rose-300">
+            <div
+              className="px-4 py-3 text-sm"
+              style={{
+                background: 'var(--md-error-container)',
+                color: 'var(--md-on-error-container)',
+                borderRadius: 'var(--shape-sm)',
+              }}
+            >
               {serverError}
-            </p>
+            </div>
           )}
           <div>
-            <p className="mb-1 text-base font-semibold text-white">Session ended</p>
-            <p className="text-sm text-slate-400">Start a fresh session or join one shared by your partner.</p>
+            <p
+              className="mb-1"
+              style={{ fontSize: '1rem', fontWeight: 500, lineHeight: '1.5rem', color: 'var(--md-on-surface)' }}
+            >
+              Session ended
+            </p>
+            <p style={{ fontSize: '0.875rem', lineHeight: '1.25rem', color: 'var(--md-on-surface-variant)' }}>
+              Start a fresh session or join one shared by your partner.
+            </p>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-3">
-            <button
-              onClick={startNewSession}
-              className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500"
-            >
+            <button onClick={startNewSession} className="md-btn md-btn-filled">
               Start new session
             </button>
-            <button
-              onClick={() => setShowJoinModal(true)}
-              className="rounded-xl border border-white/10 px-5 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-white/5"
-            >
+            <button onClick={() => setShowJoinModal(true)} className="md-btn md-btn-outlined">
               Join a different session
             </button>
           </div>
@@ -343,17 +356,30 @@ export function TranslatorPage() {
       />
 
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden p-4">
-        {/* Waiting-for-partner callout */}
+        {/* M3 Filled card — waiting callout */}
         {session && !partnerConnected && (
-          <div className="shrink-0 rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-4 py-3">
-            <p className="text-sm font-medium text-indigo-200">
+          <div
+            className="shrink-0 px-4 py-3"
+            style={{
+              background: 'var(--md-primary-container)',
+              borderRadius: 'var(--shape-md)',
+            }}
+          >
+            <p
+              className="font-medium"
+              style={{ fontSize: '0.875rem', lineHeight: '1.25rem', color: 'var(--md-on-primary-container)' }}
+            >
               Waiting for your partner to join…
             </p>
-            <p className="mt-1 text-xs text-slate-400">
+            <p
+              className="mt-1"
+              style={{ fontSize: '0.75rem', lineHeight: '1rem', color: 'var(--md-on-primary-container)', opacity: 0.8 }}
+            >
               Share session ID{' '}
               <button
                 onClick={() => navigator.clipboard.writeText(session.sessionId)}
-                className="font-mono text-indigo-300 hover:underline"
+                className="font-mono hover:underline"
+                style={{ color: 'var(--md-on-primary-container)', fontWeight: 600 }}
                 title="Click to copy"
               >
                 {session.sessionId}
@@ -364,14 +390,28 @@ export function TranslatorPage() {
         )}
 
         {serverError && (
-          <p className="shrink-0 rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-2 text-sm text-rose-300">
+          <div
+            className="shrink-0 px-4 py-2 text-sm"
+            style={{
+              background: 'var(--md-error-container)',
+              color: 'var(--md-on-error-container)',
+              borderRadius: 'var(--shape-sm)',
+            }}
+          >
             {serverError}
-          </p>
+          </div>
         )}
         {mic.error && (
-          <p className="shrink-0 rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-2 text-sm text-rose-300">
+          <div
+            className="shrink-0 px-4 py-2 text-sm"
+            style={{
+              background: 'var(--md-error-container)',
+              color: 'var(--md-on-error-container)',
+              borderRadius: 'var(--shape-sm)',
+            }}
+          >
             {mic.error}
-          </p>
+          </div>
         )}
 
         <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-2 gap-4 [&>*]:min-h-0 lg:grid-cols-2 lg:grid-rows-1">

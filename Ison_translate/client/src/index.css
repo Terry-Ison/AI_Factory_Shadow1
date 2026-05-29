@@ -1,18 +1,226 @@
 @import 'tailwindcss';
 
 @theme {
-  --font-sans: 'Segoe UI', system-ui, sans-serif;
+  --font-sans: 'Google Sans', 'Segoe UI', system-ui, sans-serif;
   --font-display: 'Fredoka', system-ui, sans-serif;
-  --color-surface: #0f1419;
-  --color-surface-elevated: #1a2332;
-  --color-border: #2d3a4f;
-  --color-accent: #6366f1;
-  --color-accent-muted: #818cf8;
-  --color-success: #22c55e;
-  --color-warning: #f59e0b;
+  --font-mono: 'Roboto Mono', 'Fira Code', monospace;
 }
 
-* {
+/* ═══════════════════════════════════════════════════════════════
+   MATERIAL DESIGN 3 — DARK THEME (default)
+   Seed color: Indigo #5B67E8
+   ═══════════════════════════════════════════════════════════════ */
+:root,
+[data-theme='dark'] {
+  /* ── Primary ── */
+  --md-primary: #BEC2FF;
+  --md-on-primary: #232778;
+  --md-primary-container: #3A3F90;
+  --md-on-primary-container: #E0E0FF;
+
+  /* ── Secondary ── */
+  --md-secondary: #C3C5DD;
+  --md-on-secondary: #2D2F47;
+  --md-secondary-container: #444562;
+  --md-on-secondary-container: #E0E0F9;
+
+  /* ── Tertiary ── */
+  --md-tertiary: #E8B4D8;
+  --md-on-tertiary: #44203A;
+  --md-tertiary-container: #5D3751;
+  --md-on-tertiary-container: #FFD7F0;
+
+  /* ── Error ── */
+  --md-error: #FFB4AB;
+  --md-on-error: #690005;
+  --md-error-container: #93000A;
+  --md-on-error-container: #FFDAD6;
+
+  /* ── Surface ── */
+  --md-surface: #131318;
+  --md-on-surface: #E5E1E9;
+  --md-surface-variant: #46464F;
+  --md-on-surface-variant: #C7C5D0;
+
+  /* ── Surface containers (elevation tiers via tint) ── */
+  --md-surface-container-lowest: #0E0E13;
+  --md-surface-container-low: #1C1B20;
+  --md-surface-container: #201F24;
+  --md-surface-container-high: #2B2930;
+  --md-surface-container-highest: #36343B;
+
+  /* ── Inverse ── */
+  --md-inverse-surface: #E5E1E9;
+  --md-inverse-on-surface: #322F37;
+  --md-inverse-primary: #5156B5;
+
+  /* ── Outline ── */
+  --md-outline: #90909A;
+  --md-outline-variant: #46464F;
+
+  /* ── Scrim ── */
+  --md-scrim: rgba(0, 0, 0, 0.7);
+
+  /* ── Shadow ── */
+  --md-shadow: rgba(0, 0, 0, 0.4);
+
+  color-scheme: dark;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MATERIAL DESIGN 3 — LIGHT THEME
+   ═══════════════════════════════════════════════════════════════ */
+[data-theme='light'] {
+  /* ── Primary ── */
+  --md-primary: #5156B5;
+  --md-on-primary: #FFFFFF;
+  --md-primary-container: #E0E0FF;
+  --md-on-primary-container: #05006F;
+
+  /* ── Secondary ── */
+  --md-secondary: #5C5F78;
+  --md-on-secondary: #FFFFFF;
+  --md-secondary-container: #E0E0F9;
+  --md-on-secondary-container: #181B30;
+
+  /* ── Tertiary ── */
+  --md-tertiary: #78516A;
+  --md-on-tertiary: #FFFFFF;
+  --md-tertiary-container: #FFD7F0;
+  --md-on-tertiary-container: #2D1127;
+
+  /* ── Error ── */
+  --md-error: #B3261E;
+  --md-on-error: #FFFFFF;
+  --md-error-container: #F9DEDC;
+  --md-on-error-container: #410E0B;
+
+  /* ── Surface ── */
+  --md-surface: #FAFAFF;
+  --md-on-surface: #1C1B1F;
+  --md-surface-variant: #E4E1EC;
+  --md-on-surface-variant: #47464F;
+
+  /* ── Surface containers ── */
+  --md-surface-container-lowest: #FFFFFF;
+  --md-surface-container-low: #F4F3FA;
+  --md-surface-container: #EEEDF5;
+  --md-surface-container-high: #E8E7EF;
+  --md-surface-container-highest: #E3E1EA;
+
+  /* ── Inverse ── */
+  --md-inverse-surface: #322F37;
+  --md-inverse-on-surface: #F4EFF4;
+  --md-inverse-primary: #BEC2FF;
+
+  /* ── Outline ── */
+  --md-outline: #777680;
+  --md-outline-variant: #C8C5D0;
+
+  /* ── Scrim ── */
+  --md-scrim: rgba(0, 0, 0, 0.5);
+
+  /* ── Shadow ── */
+  --md-shadow: rgba(0, 0, 0, 0.15);
+
+  color-scheme: light;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SHAPE SCALE
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  --shape-xs: 4px;       /* chips, badges, small elements */
+  --shape-sm: 8px;       /* text fields, small cards */
+  --shape-md: 12px;      /* cards, menus */
+  --shape-lg: 16px;      /* larger cards, nav drawer items */
+  --shape-xl: 28px;      /* dialogs, bottom sheets */
+  --shape-full: 9999px;  /* buttons, pills, FABs */
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TYPOGRAPHY SCALE (M3)
+   Base: Google Sans / system-ui
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  /* Display */
+  --ts-display-lg:   3.5625rem/4rem 400 normal -0.015625rem;
+  --ts-display-md:   2.8125rem/3.25rem 400 normal 0;
+  --ts-display-sm:   2.25rem/2.75rem 400 normal 0;
+  /* Headline */
+  --ts-headline-lg:  2rem/2.5rem 400 normal 0;
+  --ts-headline-md:  1.75rem/2.25rem 400 normal 0;
+  --ts-headline-sm:  1.5rem/2rem 400 normal 0;
+  /* Title */
+  --ts-title-lg:     1.375rem/1.75rem 400 normal 0;
+  --ts-title-md:     1rem/1.5rem 500 normal 0.009375rem;
+  --ts-title-sm:     0.875rem/1.25rem 500 normal 0.00625rem;
+  /* Body */
+  --ts-body-lg:      1rem/1.5rem 400 normal 0.03125rem;
+  --ts-body-md:      0.875rem/1.25rem 400 normal 0.015625rem;
+  --ts-body-sm:      0.75rem/1rem 400 normal 0.025rem;
+  /* Label */
+  --ts-label-lg:     0.875rem/1.25rem 500 normal 0.00625rem;
+  --ts-label-md:     0.75rem/1rem 500 normal 0.03125rem;
+  --ts-label-sm:     0.6875rem/1rem 500 normal 0.03125rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ELEVATION — box-shadow tokens (6 levels, dark/light)
+   ═══════════════════════════════════════════════════════════════ */
+:root,
+[data-theme='dark'] {
+  --elevation-0: none;
+  --elevation-1: 0 1px 2px 0 var(--md-shadow), 0 1px 3px 1px var(--md-shadow);
+  --elevation-2: 0 1px 2px 0 var(--md-shadow), 0 2px 6px 2px var(--md-shadow);
+  --elevation-3: 0 4px 8px 3px var(--md-shadow), 0 1px 3px 0 var(--md-shadow);
+  --elevation-4: 0 6px 10px 4px var(--md-shadow), 0 2px 3px 0 var(--md-shadow);
+  --elevation-5: 0 8px 12px 6px var(--md-shadow), 0 4px 4px 0 var(--md-shadow);
+}
+
+[data-theme='light'] {
+  --elevation-0: none;
+  --elevation-1: 0 1px 2px 0 var(--md-shadow), 0 1px 3px 1px var(--md-shadow);
+  --elevation-2: 0 1px 2px 0 var(--md-shadow), 0 2px 6px 2px var(--md-shadow);
+  --elevation-3: 0 4px 8px 3px var(--md-shadow), 0 1px 3px 0 var(--md-shadow);
+  --elevation-4: 0 6px 10px 4px var(--md-shadow), 0 2px 3px 0 var(--md-shadow);
+  --elevation-5: 0 8px 12px 6px var(--md-shadow), 0 4px 4px 0 var(--md-shadow);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BACKWARD-COMPAT ALIASES
+   Map old --color-* to M3 roles so existing style={{ color: 'var(--color-*)' }}
+   patterns keep working without a full rewrite pass.
+   ═══════════════════════════════════════════════════════════════ */
+:root,
+[data-theme='dark'],
+[data-theme='light'] {
+  --color-bg:               var(--md-surface);
+  --color-bg-gradient:      var(--md-surface);
+  --color-surface:          var(--md-surface-container-low);
+  --color-surface-elevated: var(--md-surface-container);
+  --color-border:           var(--md-outline-variant);
+  --color-text:             var(--md-on-surface);
+  --color-text-muted:       var(--md-on-surface-variant);
+  --color-text-faint:       var(--md-outline);
+  --color-overlay:          var(--md-scrim);
+  --color-card:             var(--md-surface-container-low);
+  --color-card-border:      var(--md-outline-variant);
+  --color-hover:            color-mix(in srgb, var(--md-on-surface) 8%, transparent);
+  --color-input-bg:         color-mix(in srgb, var(--md-on-surface) 4%, transparent);
+  --color-input-border:     var(--md-outline);
+  --color-accent:           var(--md-primary);
+  --color-accent-muted:     var(--md-primary-container);
+  --color-success:          #22c55e;
+  --color-warning:          #f59e0b;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   GLOBAL BASE
+   ═══════════════════════════════════════════════════════════════ */
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
@@ -31,7 +239,411 @@ body,
 
 body {
   font-family: var(--font-sans);
-  background: linear-gradient(160deg, #0b0f17 0%, #121a28 50%, #0d1117 100%);
-  color: #e2e8f0;
+  font-size: 1rem;
+  line-height: 1.5rem;
+  background-color: var(--md-surface);
+  color: var(--md-on-surface);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   STATE LAYERS
+   Apply .md-state-layer inside any interactive element that
+   has `position: relative; overflow: hidden`.
+   ═══════════════════════════════════════════════════════════════ */
+.md-state-layer {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 100ms linear;
+}
+
+.md-interactive {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.md-interactive:hover   .md-state-layer { opacity: 0.08; }
+.md-interactive:focus-visible .md-state-layer { opacity: 0.12; }
+.md-interactive:active  .md-state-layer { opacity: 0.12; }
+
+/* ═══════════════════════════════════════════════════════════════
+   M3 BUTTON BASE
+   All buttons share height 40px and full-pill radius.
+   ═══════════════════════════════════════════════════════════════ */
+.md-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 2.5rem;          /* 40px */
+  padding: 0 1.5rem;       /* 24px horizontal */
+  border-radius: var(--shape-full);
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.00625rem;
+  line-height: 1.25rem;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: box-shadow 200ms ease, background-color 200ms ease;
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.md-btn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+/* Filled */
+.md-btn-filled {
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+  box-shadow: var(--elevation-0);
+}
+.md-btn-filled:not(:disabled):hover { box-shadow: var(--elevation-1); }
+.md-btn-filled:not(:disabled)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--md-on-primary);
+  opacity: 0;
+  transition: opacity 100ms;
+}
+.md-btn-filled:not(:disabled):hover::after  { opacity: 0.08; }
+.md-btn-filled:not(:disabled):focus-visible::after { opacity: 0.12; }
+.md-btn-filled:not(:disabled):active::after { opacity: 0.12; }
+
+/* Tonal (filled tonal) */
+.md-btn-tonal {
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+  box-shadow: var(--elevation-0);
+}
+.md-btn-tonal:not(:disabled):hover { box-shadow: var(--elevation-1); }
+.md-btn-tonal:not(:disabled)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--md-on-secondary-container);
+  opacity: 0;
+  transition: opacity 100ms;
+}
+.md-btn-tonal:not(:disabled):hover::after  { opacity: 0.08; }
+.md-btn-tonal:not(:disabled):focus-visible::after { opacity: 0.12; }
+.md-btn-tonal:not(:disabled):active::after { opacity: 0.12; }
+
+/* Outlined */
+.md-btn-outlined {
+  background: transparent;
+  color: var(--md-primary);
+  border: 1px solid var(--md-outline);
+}
+.md-btn-outlined:not(:disabled)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--md-primary);
+  opacity: 0;
+  transition: opacity 100ms;
+}
+.md-btn-outlined:not(:disabled):hover::after  { opacity: 0.08; }
+.md-btn-outlined:not(:disabled):focus-visible::after { opacity: 0.12; }
+.md-btn-outlined:not(:disabled):active::after { opacity: 0.12; }
+
+/* Text */
+.md-btn-text {
+  background: transparent;
+  color: var(--md-primary);
+  padding: 0 0.75rem;
+}
+.md-btn-text:not(:disabled)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--md-primary);
+  opacity: 0;
+  transition: opacity 100ms;
+}
+.md-btn-text:not(:disabled):hover::after  { opacity: 0.08; }
+.md-btn-text:not(:disabled):focus-visible::after { opacity: 0.12; }
+.md-btn-text:not(:disabled):active::after { opacity: 0.12; }
+
+/* Error / destructive tonal */
+.md-btn-error {
+  background: var(--md-error-container);
+  color: var(--md-on-error-container);
+}
+.md-btn-error:not(:disabled)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--md-on-error-container);
+  opacity: 0;
+  transition: opacity 100ms;
+}
+.md-btn-error:not(:disabled):hover::after  { opacity: 0.08; }
+.md-btn-error:not(:disabled):focus-visible::after { opacity: 0.12; }
+.md-btn-error:not(:disabled):active::after { opacity: 0.12; }
+
+/* Icon button */
+.md-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--shape-full);
+  background: transparent;
+  color: var(--md-on-surface-variant);
+  border: none;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: color 150ms;
+}
+.md-icon-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity 100ms;
+}
+.md-icon-btn:not(:disabled):hover::after  { opacity: 0.08; }
+.md-icon-btn:not(:disabled):focus-visible::after { opacity: 0.12; }
+.md-icon-btn:not(:disabled):active::after { opacity: 0.12; }
+
+/* ═══════════════════════════════════════════════════════════════
+   M3 TEXT FIELD — Outlined variant
+   ═══════════════════════════════════════════════════════════════ */
+.md-field {
+  position: relative;
+  width: 100%;
+}
+
+.md-field-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.03125rem;
+  line-height: 1rem;
+  color: var(--md-on-surface-variant);
+  margin-bottom: 0.375rem;
+}
+
+.md-field-input {
+  width: 100%;
+  height: 3.5rem;          /* 56px — M3 text field height */
+  padding: 0 1rem;
+  border-radius: var(--shape-sm);
+  border: 1px solid var(--md-outline);
+  background: transparent;
+  color: var(--md-on-surface);
+  font-size: 1rem;
+  font-family: inherit;
+  line-height: 1.5rem;
+  outline: none;
+  transition: border-color 150ms, border-width 150ms;
+  appearance: none;
+}
+
+.md-field-input::placeholder {
+  color: var(--md-on-surface-variant);
+  opacity: 0.6;
+}
+
+.md-field-input:focus {
+  border-color: var(--md-primary);
+  border-width: 2px;
+}
+
+.md-field-input:hover:not(:focus) {
+  border-color: var(--md-on-surface);
+}
+
+select.md-field-input {
+  cursor: pointer;
+  background-color: transparent;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   M3 CARD SURFACES
+   ═══════════════════════════════════════════════════════════════ */
+.md-card-elevated {
+  background: var(--md-surface-container-low);
+  box-shadow: var(--elevation-1);
+  border-radius: var(--shape-md);
+}
+
+.md-card-filled {
+  background: var(--md-surface-container-highest);
+  border-radius: var(--shape-md);
+}
+
+.md-card-outlined {
+  background: var(--md-surface);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--shape-md);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   M3 CHIP — Assist/Filter
+   ═══════════════════════════════════════════════════════════════ */
+.md-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  height: 2rem;
+  padding: 0 0.75rem;
+  border-radius: var(--shape-full);
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.00625rem;
+  border: 1px solid var(--md-outline-variant);
+  background: transparent;
+  color: var(--md-on-surface-variant);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.md-chip-tonal {
+  border: none;
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SELECT & OPTION fix for light mode
+   ═══════════════════════════════════════════════════════════════ */
+select option {
+  background-color: var(--md-surface-container);
+  color: var(--md-on-surface);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SCROLLBAR (subtle, theme-aware)
+   ═══════════════════════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--md-outline-variant);
+  border-radius: var(--shape-full);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--md-outline); }
+
+/* ═══════════════════════════════════════════════════════════════
+   FOCUS RING
+   ═══════════════════════════════════════════════════════════════ */
+:focus-visible {
+  outline: 3px solid var(--md-primary);
+  outline-offset: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   AUTH GLASS CARD — force dark-palette tokens inside the card
+   so content is always legible on the translucent dark backdrop
+   regardless of the active theme.
+   ═══════════════════════════════════════════════════════════════ */
+.auth-glass-content {
+  --md-on-surface:          rgba(255, 255, 255, 0.92);
+  --md-on-surface-variant:  rgba(255, 255, 255, 0.60);
+  --md-outline:             rgba(255, 255, 255, 0.38);
+  --md-outline-variant:     rgba(255, 255, 255, 0.14);
+  --md-primary:             #BEC2FF;
+  --md-on-primary:          #232778;
+  --md-primary-container:   rgba(58, 63, 144, 0.6);
+  --md-on-primary-container:#E0E0FF;
+  --md-secondary-container: rgba(68, 69, 98, 0.7);
+  --md-on-secondary-container: #E0E0F9;
+  --md-error-container:     rgba(147, 0, 10, 0.55);
+  --md-on-error-container:  #FFDAD6;
+  --md-surface-container:   rgba(255, 255, 255, 0.05);
+  --md-surface-container-low: rgba(255, 255, 255, 0.04);
+}
+
+/* md-field-input inside glass always uses light text */
+.auth-glass-content .md-field-input {
+  color: rgba(255, 255, 255, 0.92);
+  border-color: rgba(255, 255, 255, 0.30);
+  background: rgba(255, 255, 255, 0.06);
+}
+.auth-glass-content .md-field-input:hover:not(:focus) {
+  border-color: rgba(255, 255, 255, 0.55);
+}
+.auth-glass-content .md-field-input:focus {
+  border-color: #BEC2FF;
+  border-width: 2px;
+  background: rgba(255, 255, 255, 0.08);
+}
+.auth-glass-content .md-field-input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+.auth-glass-content select.md-field-input option {
+  background-color: #1a1f35;
+  color: #e5e1e9;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   AUDIO WAVE ANIMATION (AuthLayout brand header)
+   ═══════════════════════════════════════════════════════════════ */
+@keyframes wave-pulse {
+  0%, 100% { transform: scaleY(0.12); opacity: 0.5; }
+  50%       { transform: scaleY(1);    opacity: 1; }
+}
+
+.wave-bar {
+  width: 4px;
+  height: 44px;
+  border-radius: 9999px;
+  background: linear-gradient(to top, rgba(81,86,181,0.9), rgba(190,194,255,1));
+  box-shadow: 0 0 10px rgba(190,194,255,0.55), 0 0 22px rgba(190,194,255,0.25);
+  transform-origin: center center;
+  animation: wave-pulse 1.4s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+/* ── Hero text reveal animations ── */
+@keyframes hero-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+.hero-line-1 { animation: hero-reveal 0.9s 0.1s cubic-bezier(0.22,1,0.36,1) both; }
+.hero-line-2 { animation: hero-reveal 0.9s 0.28s cubic-bezier(0.22,1,0.36,1) both; }
+.hero-tagline { animation: hero-reveal 0.8s 0.45s cubic-bezier(0.22,1,0.36,1) both; }
+.hero-feature-0 { animation: hero-reveal 0.75s 0.60s cubic-bezier(0.22,1,0.36,1) both; }
+.hero-feature-1 { animation: hero-reveal 0.75s 0.75s cubic-bezier(0.22,1,0.36,1) both; }
+.hero-feature-2 { animation: hero-reveal 0.75s 0.90s cubic-bezier(0.22,1,0.36,1) both; }
+.hero-preview   { animation: hero-reveal 0.8s  1.05s cubic-bezier(0.22,1,0.36,1) both; }
+
+/* ── Feature icon float ── */
+@keyframes icon-float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-5px); }
+}
+.icon-float-0 { animation: icon-float 3.2s 0s ease-in-out infinite; }
+.icon-float-1 { animation: icon-float 3.2s 0.6s ease-in-out infinite; }
+.icon-float-2 { animation: icon-float 3.2s 1.2s ease-in-out infinite; }

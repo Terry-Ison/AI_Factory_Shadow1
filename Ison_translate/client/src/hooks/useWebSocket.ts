@@ -25,6 +25,12 @@ type Handlers = {
 const CONNECT_TIMEOUT_MS = 20000
 const JOIN_TIMEOUT_MS = 10000
 
+function isIgnorableRealtimeError(message?: string) {
+  if (!message) return false
+  const normalized = message.trim().toLowerCase()
+  return normalized === 'timeout.' || normalized === 'timeout'
+}
+
 let sharedSocket: Socket | null = null
 let listenerCount = 0
 /** Dedupes concurrent connect() calls (e.g. React Strict Mode double-mount). */
@@ -153,10 +159,14 @@ export function useWebSocket(handlers: Handlers) {
       handlersRef.current.onSessionState?.(msg)
     })
     socket.on('error_message', (msg: { message?: string }) => {
-      if (msg?.message) handlersRef.current.onErrorMessage?.(msg.message)
+      if (msg?.message && !isIgnorableRealtimeError(msg.message)) {
+        handlersRef.current.onErrorMessage?.(msg.message)
+      }
     })
     socket.on('session_status', (msg: { message?: string }) => {
-      if (msg?.message) handlersRef.current.onErrorMessage?.(msg.message)
+      if (msg?.message && !isIgnorableRealtimeError(msg.message)) {
+        handlersRef.current.onErrorMessage?.(msg.message)
+      }
     })
 
     if (socket.connected) {

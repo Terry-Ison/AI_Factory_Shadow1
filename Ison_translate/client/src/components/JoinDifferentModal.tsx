@@ -6,6 +6,10 @@ type Props = {
   onClose: () => void
 }
 
+/**
+ * M3 Dialog — surface-container-high background, shape-xl corners,
+ * elevation-3 shadow, scrim backdrop.
+ */
 export function JoinDifferentModal({ onConfirm, onClose }: Props) {
   const [value, setValue] = useState('')
 
@@ -17,47 +21,88 @@ export function JoinDifferentModal({ onConfirm, onClose }: Props) {
   }
 
   return (
-    /* Backdrop */
+    /* M3 scrim */
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: 'var(--md-scrim)' }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[var(--color-surface-elevated)] p-6 shadow-2xl">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-white">Join a different session</h2>
-          <button
-            onClick={onClose}
-            className="rounded p-1 text-slate-500 hover:text-white transition"
+      {/* M3 Dialog container */}
+      <div
+        className="w-full max-w-sm"
+        style={{
+          background: 'var(--md-surface-container-high)',
+          borderRadius: 'var(--shape-xl)',
+          boxShadow: 'var(--elevation-3)',
+          padding: '1.5rem',
+        }}
+      >
+        {/* Dialog header */}
+        <div className="mb-4 flex items-start justify-between gap-2">
+          <h2
+            style={{
+              fontSize: '1.5rem',
+              fontWeight: 400,
+              lineHeight: '2rem',
+              color: 'var(--md-on-surface)',
+            }}
           >
-            <X size={16} />
+            Join a session
+          </h2>
+          <button
+            className="md-icon-btn"
+            onClick={onClose}
+            aria-label="Close dialog"
+            style={{ color: 'var(--md-on-surface-variant)', marginTop: '-0.25rem', marginRight: '-0.5rem' }}
+          >
+            <X size={20} />
           </button>
         </div>
 
-        <p className="mb-4 text-sm text-slate-400">
+        {/* Dialog body */}
+        <p
+          className="mb-5"
+          style={{
+            fontSize: '0.875rem',
+            lineHeight: '1.25rem',
+            color: 'var(--md-on-surface-variant)',
+          }}
+        >
           Enter the session ID shared by your partner. Your current session will be left.
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            autoFocus
-            type="text"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            placeholder="Session ID or key"
-            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder-slate-500 outline-none ring-indigo-500/40 focus:ring-2"
-          />
-          <div className="flex gap-2">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="md-field">
+            <label
+              className="md-field-label"
+              htmlFor="session-id-input"
+            >
+              Session ID
+            </label>
+            <input
+              id="session-id-input"
+              autoFocus
+              type="text"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder="e.g. abc-123-xyz"
+              className="md-field-input"
+            />
+          </div>
+
+          {/* M3 Dialog action row — Text + Filled buttons, right-aligned */}
+          <div className="flex justify-end gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-xl border border-white/10 px-4 py-2.5 text-sm text-slate-300 transition hover:bg-white/5"
+              className="md-btn md-btn-text"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!value.trim()}
-              className="flex-1 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-50"
+              className="md-btn md-btn-filled"
             >
               Join
             </button>

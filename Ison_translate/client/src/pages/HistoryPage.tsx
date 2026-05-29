@@ -21,59 +21,131 @@ function SessionCard({ session, onOpen }: { session: HistorySessionSummary; onOp
     ...new Set(session.participants.map((p) => formatLangPair(p.sourceLang, p.targetLang))),
   ].join(' · ')
 
-  const people = session.participants
-    .map((p) => p.displayName ?? 'Partner')
-    .join(' & ')
+  const people = session.participants.map((p) => p.displayName ?? 'Partner').join(' & ')
 
   return (
     <li>
       <button
         type="button"
         onClick={onOpen}
-        className="group flex w-full gap-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)]/60 p-4 text-left transition hover:border-indigo-500/40 hover:bg-white/[0.04]"
+        className="group flex w-full gap-4 p-4 text-left transition"
+        style={{
+          background: 'var(--md-surface-container-low)',
+          border: '1px solid var(--md-outline-variant)',
+          borderRadius: 'var(--shape-md)',
+          boxShadow: 'var(--elevation-0)',
+          transition: 'box-shadow 200ms',
+        }}
+        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = 'var(--elevation-1)' }}
+        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = 'var(--elevation-0)' }}
       >
         <div className="flex min-w-0 flex-1 flex-col gap-2">
+          {/* Title + status badge */}
           <div className="flex flex-wrap items-start justify-between gap-2">
-            <h2 className="text-base font-semibold text-white group-hover:text-indigo-100">
+            <h2
+              style={{
+                fontSize: '1rem',
+                fontWeight: 500,
+                lineHeight: '1.5rem',
+                letterSpacing: '0.009375rem',
+                color: 'var(--md-on-surface)',
+              }}
+            >
               {title}
             </h2>
+            {/* M3 Assist Chip as status pill */}
             <span
-              className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${badge.className}`}
+              style={{
+                ...badge.style,
+                flexShrink: 0,
+                borderRadius: 'var(--shape-full)',
+                padding: '0.125rem 0.625rem',
+                fontSize: '0.75rem',
+                fontWeight: 500,
+                lineHeight: '1rem',
+                letterSpacing: '0.03125rem',
+              }}
             >
               {badge.label}
             </span>
           </div>
 
-          <p className="text-sm text-slate-400">{subtitle}</p>
+          {/* Subtitle — Body Small */}
+          <p style={{ fontSize: '0.875rem', lineHeight: '1.25rem', color: 'var(--md-on-surface-variant)' }}>
+            {subtitle}
+          </p>
 
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+          {/* Meta chips row — Label Small */}
+          <div
+            className="flex flex-wrap items-center gap-x-3 gap-y-1"
+            style={{ fontSize: '0.75rem', lineHeight: '1rem', color: 'var(--md-outline)' }}
+          >
             <span className="inline-flex items-center gap-1">
-              <Languages size={12} className="text-indigo-400/80" />
+              <Languages size={12} style={{ color: 'var(--md-primary)' }} />
               {languageSummary}
             </span>
             <span>{people}</span>
-            <span className="font-mono text-slate-600" title={session.sessionId}>
+            <span
+              className="font-mono"
+              title={session.sessionId}
+              style={{ color: 'var(--md-outline-variant)' }}
+            >
               #{code}
             </span>
           </div>
 
+          {/* Transcript preview */}
           {session.transcriptPreview ? (
-            <p className="line-clamp-2 text-sm leading-relaxed text-slate-400">
-              <MessageSquare size={12} className="mr-1 inline text-slate-600" />
+            <p
+              className="line-clamp-2 leading-relaxed"
+              style={{ fontSize: '0.875rem', lineHeight: '1.25rem', color: 'var(--md-on-surface-variant)' }}
+            >
+              <MessageSquare
+                size={12}
+                className="mr-1 inline"
+                style={{ color: 'var(--md-outline)' }}
+              />
               {session.transcriptPreview}
               {session.transcriptPreview.length >= 160 ? '…' : ''}
             </p>
           ) : null}
 
+          {/* Media chips */}
           <div className="flex flex-wrap gap-2 pt-0.5">
             {session.hasTranscript && (
-              <span className="inline-flex items-center gap-1 rounded-md bg-white/5 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-400">
+              <span
+                className="inline-flex items-center gap-1"
+                style={{
+                  background: 'var(--md-secondary-container)',
+                  color: 'var(--md-on-secondary-container)',
+                  borderRadius: 'var(--shape-full)',
+                  padding: '0.125rem 0.5rem',
+                  fontSize: '0.6875rem',
+                  fontWeight: 500,
+                  letterSpacing: '0.03125rem',
+                  lineHeight: '1rem',
+                  textTransform: 'uppercase',
+                }}
+              >
                 <MessageSquare size={10} />
                 Transcript
               </span>
             )}
             {session.hasRecording && (
-              <span className="inline-flex items-center gap-1 rounded-md bg-white/5 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-400">
+              <span
+                className="inline-flex items-center gap-1"
+                style={{
+                  background: 'var(--md-secondary-container)',
+                  color: 'var(--md-on-secondary-container)',
+                  borderRadius: 'var(--shape-full)',
+                  padding: '0.125rem 0.5rem',
+                  fontSize: '0.6875rem',
+                  fontWeight: 500,
+                  letterSpacing: '0.03125rem',
+                  lineHeight: '1rem',
+                  textTransform: 'uppercase',
+                }}
+              >
                 <Mic size={10} />
                 Audio
               </span>
@@ -81,7 +153,10 @@ function SessionCard({ session, onOpen }: { session: HistorySessionSummary; onOp
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center self-center text-slate-600 group-hover:text-indigo-300">
+        <div
+          className="flex shrink-0 items-center self-center transition-transform group-hover:translate-x-0.5"
+          style={{ color: 'var(--md-outline)' }}
+        >
           <ChevronRight size={20} />
         </div>
       </button>
@@ -99,7 +174,7 @@ export function HistoryPage() {
   useEffect(() => {
     if (!token) return
     let cancelled = false
-    setLoading(true)
+    setLoading(true) // eslint-disable-line react-hooks/set-state-in-effect
     void fetchHistorySessions(token)
       .then((data) => {
         if (!cancelled) setSessions(data.sessions)
@@ -118,10 +193,25 @@ export function HistoryPage() {
   }, [token])
 
   return (
-    <main className="mx-auto flex h-full min-h-0 w-full max-w-3xl flex-col gap-5 overflow-hidden p-4 md:p-6">
+    <main
+      className="mx-auto flex h-full min-h-0 w-full max-w-3xl flex-col gap-5 overflow-hidden p-4 md:p-6"
+    >
       <header className="shrink-0">
-        <h1 className="text-2xl font-bold text-white">Your conversations</h1>
-        <p className="mt-1 text-sm text-slate-400">
+        {/* M3 Headline Medium */}
+        <h1
+          style={{
+            fontSize: '1.75rem',
+            fontWeight: 400,
+            lineHeight: '2.25rem',
+            color: 'var(--md-on-surface)',
+          }}
+        >
+          Your conversations
+        </h1>
+        <p
+          className="mt-1"
+          style={{ fontSize: '0.875rem', lineHeight: '1.25rem', color: 'var(--md-on-surface-variant)' }}
+        >
           Browse past translation sessions — who you spoke with, languages used, and what was said.
         </p>
       </header>
@@ -132,23 +222,52 @@ export function HistoryPage() {
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="h-32 animate-pulse rounded-xl border border-[var(--color-border)] bg-white/5"
+                className="h-32 animate-pulse"
+                style={{
+                  borderRadius: 'var(--shape-md)',
+                  background: 'var(--md-surface-container)',
+                }}
               />
             ))}
           </div>
         )}
 
         {error && (
-          <p className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+          <div
+            className="px-4 py-3 text-sm"
+            style={{
+              background: 'var(--md-error-container)',
+              color: 'var(--md-on-error-container)',
+              borderRadius: 'var(--shape-sm)',
+            }}
+          >
             {error}
-          </p>
+          </div>
         )}
 
         {!loading && !error && sessions.length === 0 && (
-          <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-[var(--color-border)] px-6 py-16 text-center">
-            <Clock size={32} className="text-slate-600" />
-            <p className="text-base font-medium text-slate-300">No conversations yet</p>
-            <p className="max-w-sm text-sm text-slate-500">
+          <div
+            className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center"
+            style={{
+              border: '1px dashed var(--md-outline-variant)',
+              borderRadius: 'var(--shape-lg)',
+            }}
+          >
+            <Clock size={40} style={{ color: 'var(--md-outline)' }} />
+            <p
+              style={{
+                fontSize: '1rem',
+                fontWeight: 500,
+                lineHeight: '1.5rem',
+                color: 'var(--md-on-surface)',
+              }}
+            >
+              No conversations yet
+            </p>
+            <p
+              className="max-w-sm"
+              style={{ fontSize: '0.875rem', lineHeight: '1.25rem', color: 'var(--md-on-surface-variant)' }}
+            >
               When you finish a live translation session, it will appear here with transcripts and
               recordings.
             </p>

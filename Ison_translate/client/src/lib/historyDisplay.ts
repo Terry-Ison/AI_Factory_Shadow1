@@ -103,16 +103,53 @@ export function sessionSubtitle(
   return `${when} · ${duration}`
 }
 
-export function statusBadge(status: string): { label: string; className: string } {
+/** M3-aligned status pill styles using inline CSS vars for theme safety. */
+export function statusBadge(status: string): {
+  label: string
+  className: string
+  style: React.CSSProperties
+} {
   switch (status) {
     case 'active':
-      return { label: 'In progress', className: 'bg-emerald-500/15 text-emerald-300 ring-emerald-500/30' }
+      return {
+        label: 'In progress',
+        className: '',
+        style: {
+          background: 'color-mix(in srgb, #22c55e 15%, transparent)',
+          color: '#22c55e',
+          border: '1px solid color-mix(in srgb, #22c55e 30%, transparent)',
+        },
+      }
     case 'ended':
-      return { label: 'Completed', className: 'bg-slate-500/15 text-slate-300 ring-slate-500/30' }
+      return {
+        label: 'Completed',
+        className: '',
+        style: {
+          background: 'var(--md-surface-container-high)',
+          color: 'var(--md-on-surface-variant)',
+          border: '1px solid var(--md-outline-variant)',
+        },
+      }
     case 'pending':
-      return { label: 'Waiting', className: 'bg-amber-500/15 text-amber-300 ring-amber-500/30' }
+      return {
+        label: 'Waiting',
+        className: '',
+        style: {
+          background: 'color-mix(in srgb, #f59e0b 15%, transparent)',
+          color: '#f59e0b',
+          border: '1px solid color-mix(in srgb, #f59e0b 30%, transparent)',
+        },
+      }
     default:
-      return { label: status, className: 'bg-slate-500/15 text-slate-300 ring-slate-500/30' }
+      return {
+        label: status,
+        className: '',
+        style: {
+          background: 'var(--md-surface-container-high)',
+          color: 'var(--md-on-surface-variant)',
+          border: '1px solid var(--md-outline-variant)',
+        },
+      }
   }
 }
 
