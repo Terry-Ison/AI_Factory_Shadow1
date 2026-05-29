@@ -37,7 +37,7 @@ export function AuthLayout({ children }: Props) {
       </div>
 
       {/* Right branding — hidden on mobile */}
-      <div className="relative z-10 hidden flex-1 flex-col items-center justify-center px-12 sm:flex">
+      <div className="relative z-10 hidden flex-1 flex-col items-center justify-center px-10 sm:flex">
         <div className="max-w-lg text-center">
           <h1 className="font-display text-5xl font-bold leading-tight text-white drop-shadow-lg xl:text-6xl">
             Welcome to<br />
