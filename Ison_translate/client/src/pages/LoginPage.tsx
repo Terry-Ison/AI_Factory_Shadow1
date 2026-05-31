@@ -38,30 +38,8 @@ export function LoginPage() {
 
   return (
     <AuthLayout>
-<<<<<<< Updated upstream
-      {/* Tabs */}
-      <div className="mb-6 flex rounded-xl bg-white/5 p-1">
-        {(['signin', 'signup', 'guest'] as Tab[]).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`flex-1 rounded-lg py-2 text-xs font-semibold cursor-pointer transition ${
-              tab === t
-                ? 'bg-indigo-600 text-white shadow'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            {t === 'signin' ? 'Sign in' : t === 'signup' ? 'Sign up' : 'Join session'}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'signin' && (
-        <SignInForm
-=======
       {view === 'signin' && (
         <SignInView
->>>>>>> Stashed changes
           login={login}
           onSuccess={() => navigate('/setup/languages')}
           onSignUp={() => setView('signup')}
@@ -309,12 +287,8 @@ function PrimaryButton({ loading, label }: { loading: boolean; label: string }) 
     <button
       type="submit"
       disabled={loading}
-<<<<<<< Updated upstream
-      className="w-full cursor-pointer rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
-=======
       className="md-btn md-btn-filled"
       style={{ width: '100%', marginTop: '0.5rem' }}
->>>>>>> Stashed changes
     >
       {loading ? 'Please wait…' : label}
     </button>

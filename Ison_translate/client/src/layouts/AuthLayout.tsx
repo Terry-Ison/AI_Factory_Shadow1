@@ -129,18 +129,6 @@ export function AuthLayout({ children }: Props) {
         </div>
       </div>
 
-<<<<<<< Updated upstream
-      {/* Right branding — hidden on mobile */}
-      <div className="relative z-10 hidden flex-1 flex-col items-center justify-center px-10 sm:flex">
-        <div className="max-w-lg text-center">
-          <h1 className="font-display text-5xl font-bold leading-tight text-white drop-shadow-lg xl:text-6xl">
-            Welcome to<br />
-            <span className="text-indigo-400">Transly</span>
-          </h1>
-          <p className="mt-5 text-lg text-slate-300 drop-shadow">
-            Real-time voice translation — effortless conversations across any language barrier.
-          </p>
-=======
       {/* ── Right hero panel (desktop) ── */}
       <div className="relative z-10 hidden flex-1 flex-col items-center justify-center px-8 lg:flex xl:px-16">
         <HeroContent />
@@ -374,7 +362,6 @@ function MockConversation() {
               Bonjour ! Oui, commençons la réunion.
             </p>
           </div>
->>>>>>> Stashed changes
         </div>
       </div>
     </div>
