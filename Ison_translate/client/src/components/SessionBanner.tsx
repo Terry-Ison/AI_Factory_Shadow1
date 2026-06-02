@@ -1,7 +1,13 @@
-import { ChevronDown, ChevronUp, Copy, LogIn, Mic, MicOff, PhoneOff } from 'lucide-react'
-import { useState } from 'react'
+import { ChevronDown, ChevronUp, Copy, LogIn, Mic, MicOff, MoreVertical, PhoneOff, Send, X } from 'lucide-react'
+import { useRef, useState } from 'react'
+import axiosInstance from '../api/axiosInstance'
 import { languageLabel } from '../config'
+import { useOnClickOutside } from '../hooks/useOnClickOutside'
 import type { SessionConfig } from '../types'
+import { Button } from './ui/Button'
+import { Input } from './ui/Input'
+
+type VoiceGender = 'male' | 'female'
 
 type Props = {
   session: SessionConfig | null
@@ -15,6 +21,8 @@ type Props = {
   onLeave: () => void
   onToggleMute: () => void
   onJoinDifferent: () => void
+  onVoiceChange?: (voice: VoiceGender) => void
+  voice?: VoiceGender
 }
 
 /**
@@ -33,11 +41,27 @@ export function SessionBanner({
   onLeave,
   onToggleMute,
   onJoinDifferent,
+  onVoiceChange,
+  voice,
 }: Props) {
   const [collapsed, setCollapsed] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [voiceMenuOpen, setVoiceMenuOpen] = useState(false)
+  const voiceMenuRef = useRef<HTMLDivElement | null>(null)
+  const [internalVoice, setInternalVoice] = useState<VoiceGender>('female')
+  const [inviteOpen, setInviteOpen] = useState(false)
+  const inviteRef = useRef<HTMLDivElement | null>(null)
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteSending, setInviteSending] = useState(false)
+  const [inviteError, setInviteError] = useState<string | null>(null)
+  const [inviteSuccess, setInviteSuccess] = useState<string | null>(null)
+
+  const activeVoice = voice ?? internalVoice
 
   const sessionId = session?.sessionId ?? ''
+
+  useOnClickOutside(voiceMenuRef, () => setVoiceMenuOpen(false), voiceMenuOpen)
+  useOnClickOutside(inviteRef, () => setInviteOpen(false), inviteOpen)
 
   function copySessionId() {
     if (!sessionId) return
@@ -45,6 +69,36 @@ export function SessionBanner({
       setCopied(true)
       setTimeout(() => setCopied(false), 1800)
     })
+  }
+
+  function setVoiceGender(next: VoiceGender) {
+    setInternalVoice(next)
+    onVoiceChange?.(next)
+    setVoiceMenuOpen(false)
+  }
+
+  async function sendInvite() {
+    const email = inviteEmail.trim()
+    if (!email) return
+
+    setInviteError(null)
+    setInviteSuccess(null)
+    setInviteSending(true)
+    try {
+      await axiosInstance.post('/admin/invite', { email })
+      setInviteSuccess('Invite sent')
+      setInviteEmail('')
+      window.setTimeout(() => setInviteOpen(false), 700)
+    } catch (err) {
+      const message =
+        err && typeof err === 'object' && 'response' in err
+          ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ((err as any).response?.data?.message as string) ?? 'Failed to send invite'
+          : 'Failed to send invite'
+      setInviteError(message)
+    } finally {
+      setInviteSending(false)
+    }
   }
 
   return (
@@ -216,25 +270,131 @@ export function SessionBanner({
                 {muted ? 'Unmute' : 'Mute'}
               </button>
 
-              <button
-                onClick={onJoinDifferent}
-                className="md-btn md-btn-outlined"
-                style={{ height: '2rem', fontSize: '0.75rem', padding: '0 0.75rem' }}
-              >
-                <LogIn size={14} />
+              <Button variant="outlined" size="sm" onClick={onJoinDifferent} leftIcon={<LogIn size={14} />}>
                 Join different session
-              </button>
+              </Button>
 
-              <button
-                onClick={onLeave}
-                className="md-btn md-btn-error"
-                style={{ height: '2rem', fontSize: '0.75rem', padding: '0 0.75rem' }}
-              >
-                <PhoneOff size={14} />
+              <Button variant="error" size="sm" onClick={onLeave} leftIcon={<PhoneOff size={14} />}>
                 Leave
-              </button>
+              </Button>
+
+              <Button
+                variant="outlined"
+                size="sm"
+                onClick={() => {
+                  setInviteError(null)
+                  setInviteSuccess(null)
+                  setInviteOpen(true)
+                }}
+              >
+                Invite User
+              </Button>
+
+              {/* Voice menu (3-dots) */}
+              <div className="relative" ref={voiceMenuRef}>
+                <button
+                  type="button"
+                  className="md-icon-btn"
+                  title="Voice options"
+                  aria-label="Voice options"
+                  onClick={() => setVoiceMenuOpen((v) => !v)}
+                  style={{ width: '2rem', height: '2rem', color: 'var(--md-on-surface-variant)' }}
+                >
+                  <MoreVertical size={18} />
+                </button>
+
+                {voiceMenuOpen && (
+                  <div
+                    className="absolute right-0 mt-2 w-44 overflow-hidden rounded-xl border p-1 shadow-lg"
+                    style={{
+                      background: 'var(--md-surface-container-high)',
+                      borderColor: 'var(--md-outline-variant)',
+                    }}
+                    role="menu"
+                    aria-label="Voice options menu"
+                  >
+                    <div
+                      className="px-3 py-2 text-xs"
+                      style={{ color: 'var(--md-on-surface-variant)' }}
+                    >
+                      Voice
+                    </div>
+                    <MenuItem
+                      active={activeVoice === 'male'}
+                      onClick={() => setVoiceGender('male')}
+                      label="Male"
+                    />
+                    <MenuItem
+                      active={activeVoice === 'female'}
+                      onClick={() => setVoiceGender('female')}
+                      label="Female"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           )}
+        </div>
+      )}
+
+      {inviteOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'var(--md-scrim)' }}>
+          <div
+            ref={inviteRef}
+            className="w-full max-w-md overflow-hidden"
+            style={{
+              background: 'var(--md-surface-container-lowest)',
+              border: '1px solid var(--md-outline-variant)',
+              borderRadius: 'var(--shape-sm)',
+              boxShadow: 'var(--elevation-4)',
+            }}
+          >
+            <div className="flex items-center justify-between gap-3 px-5 py-4" style={{ borderBottom: '1px solid var(--md-outline-variant)' }}>
+              <div>
+                <p className="text-lg font-medium leading-6" style={{ color: 'var(--md-on-surface)' }}>
+                  Invite user
+                </p>
+                <p className="text-sm leading-5" style={{ color: 'var(--md-on-surface-variant)' }}>
+                  Enter email to send invitation.
+                </p>
+              </div>
+              <button type="button" className="md-icon-btn" onClick={() => setInviteOpen(false)} aria-label="Close invite popup">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-3 p-5">
+              <Input
+                label="Email address"
+                value={inviteEmail}
+                onChange={setInviteEmail}
+                placeholder="name@company.com"
+                type="email"
+                autoFocus
+                error={inviteError}
+              />
+              {inviteSuccess && (
+                <div className="px-3 py-2 text-sm" style={{ background: 'var(--md-primary-container)', color: 'var(--md-on-primary-container)', borderRadius: 'var(--shape-sm)' }}>
+                  {inviteSuccess}
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-wrap justify-end gap-2 px-5 py-4" style={{ borderTop: '1px solid var(--md-outline-variant)' }}>
+              <Button variant="text" onClick={() => setInviteOpen(false)} disabled={inviteSending}>
+                Cancel
+              </Button>
+              <Button
+                variant="filled"
+                onClick={() => void sendInvite()}
+                disabled={!inviteEmail.trim()}
+                loading={inviteSending}
+                leftIcon={<Send size={16} />}
+              >
+                Send invite
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -265,6 +425,32 @@ function IconBtn({
       }}
     >
       {children}
+    </button>
+  )
+}
+
+function MenuItem({
+  label,
+  active,
+  onClick,
+}: {
+  label: string
+  active: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm"
+      style={{
+        color: 'var(--md-on-surface)',
+        background: active ? 'var(--md-secondary-container)' : 'transparent',
+      }}
+      role="menuitem"
+    >
+      <span>{label}</span>
+      {active && <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>Selected</span>}
     </button>
   )
 }

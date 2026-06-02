@@ -4,6 +4,7 @@ export type AuthUser = {
   id: string
   email: string
   displayName: string
+  role?: 'Admin' | 'Agent' | 'Customer' | string
   defaultSourceLang: string
   defaultTargetLang: string
   createdAt: string

@@ -6,11 +6,6 @@ type Props = {
   collapsed: boolean
 }
 
-/**
- * M3 Navigation Drawer — Modal / standard variant.
- * Active destination: secondary-container fill + on-secondary-container text.
- * Inactive: on-surface-variant text.
- */
 export function Sidebar({ collapsed }: Props) {
   const { user, isGuest, logout } = useAuth()
   const navigate = useNavigate()
@@ -34,8 +29,6 @@ export function Sidebar({ collapsed }: Props) {
         overflow: 'hidden',
       }}
     >
-
-
       <nav className="flex flex-1 flex-col gap-0.5 px-2 py-2">
         {!isGuest && user && (
 

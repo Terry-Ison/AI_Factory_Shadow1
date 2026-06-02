@@ -53,10 +53,10 @@ export function Navbar({ onToggleSidebar }: Props) {
 
       {/* M3 headline: Title Large */}
       <span
-        className="font-display flex-1 select-none pl-1"
+        className="font-display flex-1 select-none pl-1 font-semibold "
         style={{
           fontSize: '1.375rem',
-          fontWeight: 400,
+          // fontWeight: 400,
           lineHeight: '1.75rem',
           color: 'var(--md-on-surface)',
         }}

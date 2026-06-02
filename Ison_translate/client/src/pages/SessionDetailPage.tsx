@@ -1,4 +1,16 @@
-import { ArrowLeft, Copy, Languages, Users } from 'lucide-react'
+import {
+  ArrowLeft,
+  CalendarDays,
+  Check,
+  Copy,
+  FileAudio,
+  Languages,
+  MessageSquare,
+  Mic,
+  Timer,
+  UserRound,
+  Users,
+} from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AuthenticatedAudio } from '../components/AuthenticatedAudio'
@@ -16,29 +28,92 @@ import {
   statusBadge,
 } from '../lib/historyDisplay'
 
-const sectionCard: React.CSSProperties = {
-  background: 'var(--md-surface-container-low)',
-  border: '1px solid var(--md-outline-variant)',
-  borderRadius: 'var(--shape-lg)',
-  boxShadow: 'var(--elevation-1)',
-  overflow: 'hidden',
-  display: 'flex',
-  flexDirection: 'column',
-  minHeight: 0,
+function DetailStat({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof Timer
+  label: string
+  value: string | number
+}) {
+  return (
+    <div
+      className="flex min-h-20 items-center gap-3 p-3"
+      style={{
+        background: 'var(--md-surface-container)',
+        border: '1px solid var(--md-outline-variant)',
+        borderRadius: 'var(--shape-sm)',
+      }}
+    >
+      <span
+        className="flex h-9 w-9 shrink-0 items-center justify-center"
+        style={{
+          background: 'var(--md-secondary-container)',
+          borderRadius: 'var(--shape-full)',
+          color: 'var(--md-on-secondary-container)',
+        }}
+      >
+        <Icon size={17} />
+      </span>
+      <div className="min-w-0">
+        <p className="truncate text-sm font-medium leading-5" style={{ color: 'var(--md-on-surface)' }}>
+          {value}
+        </p>
+        <p className="text-xs leading-4" style={{ color: 'var(--md-outline)' }}>
+          {label}
+        </p>
+      </div>
+    </div>
+  )
 }
 
-const sectionHeader: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '0.5rem',
-  padding: '0.75rem 1rem',
-  borderBottom: '1px solid var(--md-outline-variant)',
-  flexShrink: 0,
-  fontSize: '0.875rem',
-  fontWeight: 500,
-  letterSpacing: '0.00625rem',
-  lineHeight: '1.25rem',
-  color: 'var(--md-on-surface)',
+function Panel({
+  title,
+  icon: Icon,
+  children,
+  className = '',
+}: {
+  title: string
+  icon: typeof Users
+  children: React.ReactNode
+  className?: string
+}) {
+  return (
+    <section
+      className={`flex min-h-0 flex-col overflow-hidden ${className}`}
+      style={{
+        background: 'var(--md-surface-container-lowest)',
+        border: '1px solid var(--md-outline-variant)',
+        borderRadius: 'var(--shape-sm)',
+      }}
+    >
+      <header
+        className="flex shrink-0 items-center gap-2 px-4 py-3"
+        style={{
+          borderBottom: '1px solid var(--md-outline-variant)',
+          color: 'var(--md-on-surface)',
+        }}
+      >
+        <Icon size={17} style={{ color: 'var(--md-primary)' }} />
+        <h2 className="text-sm font-medium leading-5">{title}</h2>
+      </header>
+      {children}
+    </section>
+  )
+}
+
+function LoadingState() {
+  return (
+    <main className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-4 p-4 md:p-6">
+      <div className="h-10 w-36 animate-pulse" style={{ background: 'var(--md-surface-container)', borderRadius: 'var(--shape-full)' }} />
+      <div className="h-48 animate-pulse" style={{ background: 'var(--md-surface-container)', borderRadius: 'var(--shape-sm)' }} />
+      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[0.85fr_1.15fr]">
+        <div className="animate-pulse" style={{ background: 'var(--md-surface-container)', borderRadius: 'var(--shape-sm)' }} />
+        <div className="animate-pulse" style={{ background: 'var(--md-surface-container)', borderRadius: 'var(--shape-sm)' }} />
+      </div>
+    </main>
+  )
 }
 
 export function SessionDetailPage() {
@@ -54,6 +129,7 @@ export function SessionDetailPage() {
     if (!sessionId || !token) return
     let cancelled = false
     setLoading(true) // eslint-disable-line react-hooks/set-state-in-effect
+    setError(null)
     void fetchHistorySession(token, decodeURIComponent(sessionId))
       .then((data) => {
         if (!cancelled) setDetail(data)
@@ -71,14 +147,6 @@ export function SessionDetailPage() {
     }
   }, [sessionId, token])
 
-  const transcriptParagraph = useMemo(() => {
-    if (!detail?.transcripts.length) return ''
-    return detail.transcripts
-      .filter((t) => t.role === 'source' || t.role === 'translation')
-      .map((t) => t.text)
-      .join(' ')
-  }, [detail])
-
   const participantByDbId = useMemo(() => {
     const map = new Map<string, string>()
     if (!detail) return map
@@ -86,6 +154,11 @@ export function SessionDetailPage() {
       if (p.id) map.set(p.id, participantDisplayName(p))
     }
     return map
+  }, [detail])
+
+  const languageSummary = useMemo(() => {
+    if (!detail) return ''
+    return [...new Set(detail.participants.map((p) => formatLangPair(p.sourceLang, p.targetLang)))].join(' / ')
   }, [detail])
 
   function copyCode() {
@@ -96,33 +169,11 @@ export function SessionDetailPage() {
     })
   }
 
-  if (loading) {
-    return (
-      <main className="mx-auto flex h-full max-w-4xl flex-col gap-4 p-4 md:p-6">
-        {[1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className={`animate-pulse ${i === 1 ? 'h-8 w-32' : 'h-24'}`}
-            style={{ background: 'var(--md-surface-container)', borderRadius: 'var(--shape-md)' }}
-          />
-        ))}
-        <div className="grid flex-1 gap-4 lg:grid-cols-2">
-          {[1, 2].map((i) => (
-            <div
-              key={i}
-              className="min-h-48 animate-pulse"
-              style={{ background: 'var(--md-surface-container)', borderRadius: 'var(--shape-lg)' }}
-            />
-          ))}
-        </div>
-      </main>
-    )
-  }
+  if (loading) return <LoadingState />
 
   if (error || !detail) {
     return (
-      <main className="mx-auto max-w-4xl p-4 md:p-6">
-        {/* M3 Text Button with leading icon */}
+      <main className="mx-auto w-full max-w-6xl p-4 md:p-6">
         <button
           type="button"
           onClick={() => navigate('/app/history')}
@@ -130,7 +181,7 @@ export function SessionDetailPage() {
           style={{ paddingLeft: '0.5rem' }}
         >
           <ArrowLeft size={16} />
-          Back to conversations
+          All conversations
         </button>
         <div
           className="px-4 py-3 text-sm"
@@ -150,231 +201,264 @@ export function SessionDetailPage() {
   const title = sessionTitle(detail.participants)
   const code = shortSessionCode(detail.sessionId)
   const duration = formatDurationMs(sessionDurationMs(detail.startedAt, detail.endedAt))
+  const sourceMessages = detail.transcripts.filter((t) => t.role === 'source' || t.role === 'translation')
 
   return (
-    <main className="mx-auto flex h-full min-h-0 w-full max-w-4xl flex-col gap-5 overflow-hidden p-4 md:p-6">
-      <header className="shrink-0 space-y-3">
-        {/* M3 Text Button */}
-        <button
-          type="button"
-          onClick={() => navigate('/app/history')}
-          className="md-btn md-btn-text gap-1"
-          style={{ paddingLeft: '0.5rem' }}
-        >
-          <ArrowLeft size={16} />
-          All conversations
-        </button>
+    <main className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-4 overflow-hidden p-4 md:p-6">
+      <button
+        type="button"
+        onClick={() => navigate('/app/history')}
+        className="md-btn md-btn-text w-fit gap-1"
+        style={{ paddingLeft: '0.5rem' }}
+      >
+        <ArrowLeft size={16} />
+        All conversations
+      </button>
 
-        {/* M3 Elevated card — session header */}
-        <div
-          style={{
-            background: 'var(--md-surface-container)',
-            border: '1px solid var(--md-outline-variant)',
-            borderRadius: 'var(--shape-lg)',
-            boxShadow: 'var(--elevation-1)',
-            padding: '1.25rem',
-          }}
-        >
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              {/* M3 Title Large */}
-              <h1
+      <header
+        className="shrink-0 p-5 md:p-6"
+        style={{
+          background: 'var(--md-surface-container-lowest)',
+          border: '1px solid var(--md-outline-variant)',
+          borderRadius: 'var(--shape-sm)',
+        }}
+      >
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0 max-w-3xl">
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <span
+                className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium"
                 style={{
-                  fontSize: '1.375rem',
-                  fontWeight: 400,
-                  lineHeight: '1.75rem',
-                  color: 'var(--md-on-surface)',
+                  background: 'var(--md-primary-container)',
+                  color: 'var(--md-on-primary-container)',
                 }}
               >
-                {title}
-              </h1>
-              <p
-                className="mt-1"
-                style={{ fontSize: '0.875rem', lineHeight: '1.25rem', color: 'var(--md-on-surface-variant)' }}
+                <MessageSquare size={13} />
+                Session detail
+              </span>
+              <span
+                style={{
+                  ...badge.style,
+                  borderRadius: 'var(--shape-full)',
+                  padding: '0.1875rem 0.625rem',
+                  fontSize: '0.75rem',
+                  fontWeight: 500,
+                  lineHeight: '1rem',
+                }}
               >
-                {formatSessionDate(detail.startedAt)}
-                {detail.endedAt ? ` · Ended ${formatSessionDate(detail.endedAt)}` : ''}
-              </p>
+                {badge.label}
+              </span>
             </div>
-            <span
-              style={{
-                ...badge.style,
-                flexShrink: 0,
-                borderRadius: 'var(--shape-full)',
-                padding: '0.125rem 0.625rem',
-                fontSize: '0.75rem',
-                fontWeight: 500,
-                lineHeight: '1rem',
-                letterSpacing: '0.03125rem',
-              }}
-            >
-              {badge.label}
-            </span>
+
+            <h1 className="text-2xl leading-8 md:text-4xl md:leading-[3rem]" style={{ color: 'var(--md-on-surface)' }}>
+              {title}
+            </h1>
+            <p className="mt-2 text-sm leading-6" style={{ color: 'var(--md-on-surface-variant)' }}>
+              {formatSessionDate(detail.startedAt)}
+              {detail.endedAt ? ` / Ended ${formatSessionDate(detail.endedAt)}` : ' / Still open'}
+            </p>
           </div>
 
-          <div
-            className="mt-4 flex flex-wrap items-center gap-3"
-            style={{ fontSize: '0.875rem', lineHeight: '1.25rem', color: 'var(--md-on-surface-variant)' }}
+          <button
+            type="button"
+            onClick={copyCode}
+            className="md-chip shrink-0 font-mono text-xs"
+            title="Copy full session ID"
           >
-            <span>{duration}</span>
-            {/* M3 Outlined chip for session code */}
-            <button
-              type="button"
-              onClick={copyCode}
-              className="md-chip inline-flex items-center gap-1.5 font-mono text-xs"
-              title="Copy full session ID"
-            >
-              Session #{code}
-              <Copy size={11} />
-            </button>
-            {copied && (
-              <span style={{ fontSize: '0.75rem', color: 'var(--md-primary)', fontWeight: 500 }}>
-                Copied
-              </span>
-            )}
-          </div>
+            {copied ? <Check size={13} /> : <Copy size={13} />}
+            #{code}
+          </button>
+        </div>
+
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <DetailStat icon={Timer} label="Duration" value={duration} />
+          <DetailStat icon={Users} label="Participants" value={detail.participants.length} />
+          <DetailStat icon={MessageSquare} label="Transcript lines" value={sourceMessages.length} />
+          <DetailStat icon={FileAudio} label="Recordings" value={detail.recordings.length} />
         </div>
       </header>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-2 [&>*]:min-h-0">
-        {/* People & transcript */}
-        <section style={sectionCard}>
-          <h2 style={sectionHeader}>
-            <Users size={16} style={{ color: 'var(--md-primary)' }} />
-            Who was in this call
-          </h2>
-
-          <ul className="shrink-0" style={{ borderBottom: '1px solid var(--md-outline-variant)' }}>
-            {detail.participants.map((p, idx) => (
-              <li
-                key={p.id ?? p.userId}
-                className="flex items-center gap-3 px-4 py-3"
-                style={idx > 0 ? { borderTop: '1px solid var(--md-outline-variant)' } : undefined}
-              >
-                {/* M3 avatar */}
-                <div
-                  className="flex h-9 w-9 shrink-0 items-center justify-center text-sm font-bold"
-                  style={{
-                    borderRadius: 'var(--shape-full)',
-                    background: p.isYou
-                      ? 'var(--md-primary-container)'
-                      : 'var(--md-surface-container-highest)',
-                    color: p.isYou
-                      ? 'var(--md-on-primary-container)'
-                      : 'var(--md-on-surface-variant)',
-                  }}
-                >
-                  {(p.displayName ?? '?').charAt(0).toUpperCase()}
-                </div>
-                <div className="min-w-0">
-                  <p style={{ fontWeight: 500, color: 'var(--md-on-surface)', fontSize: '0.875rem' }}>
-                    {participantDisplayName(p)}
-                    {p.isInitiator && !p.isYou ? (
-                      <span
-                        className="ml-2 font-normal"
-                        style={{ fontSize: '0.75rem', color: 'var(--md-outline)' }}
-                      >
-                        started session
-                      </span>
-                    ) : null}
-                  </p>
-                  <p
-                    className="flex items-center gap-1"
-                    style={{ fontSize: '0.75rem', color: 'var(--md-on-surface-variant)' }}
+      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[0.82fr_1.18fr]">
+        <div className="flex min-h-0 flex-col gap-4">
+          <Panel title="Participants" icon={Users} className="shrink-0">
+            <ul>
+              {detail.participants.map((p, idx) => {
+                const name = participantDisplayName(p)
+                return (
+                  <li
+                    key={p.id ?? p.userId}
+                    className="flex items-center gap-3 px-4 py-3"
+                    style={idx > 0 ? { borderTop: '1px solid var(--md-outline-variant)' } : undefined}
                   >
-                    <Languages size={11} />
-                    Spoke {formatLangPair(p.sourceLang, p.targetLang)}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
-
-          <h2 style={{ ...sectionHeader, borderTop: '1px solid var(--md-outline-variant)' }}>
-            What was said
-          </h2>
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-            {transcriptParagraph ? (
-              <p
-                className="whitespace-pre-wrap"
-                style={{ fontSize: '0.875rem', lineHeight: '1.5rem', color: 'var(--md-on-surface)' }}
-              >
-                {transcriptParagraph}
-              </p>
-            ) : (
-              <p style={{ fontSize: '0.875rem', lineHeight: '1.25rem', color: 'var(--md-on-surface-variant)' }}>
-                No transcript was saved for this session.
-              </p>
-            )}
-          </div>
-        </section>
-
-        {/* Audio */}
-        <section style={sectionCard}>
-          <h2 style={sectionHeader}>
-            Audio recordings
-          </h2>
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-            {detail.recordings.length === 0 ? (
-              <p style={{ fontSize: '0.875rem', lineHeight: '1.25rem', color: 'var(--md-on-surface-variant)' }}>
-                No audio was saved for this session.
-              </p>
-            ) : (
-              <ul className="space-y-4">
-                {detail.recordings.map((r) => {
-                  const owner = r.participantId
-                    ? participantByDbId.get(r.participantId)
-                    : undefined
-                  const label = recordingLabel(r.kind, owner)
-                  const length =
-                    r.durationMs && r.durationMs > 0
-                      ? formatDurationMs(r.durationMs)
-                      : r.finalizedAt
-                        ? 'Ready to play'
-                        : 'Still processing'
-
-                  return (
-                    <li
-                      key={r.id}
-                      className="p-4"
+                    <div
+                      className="flex h-10 w-10 shrink-0 items-center justify-center text-sm font-bold"
                       style={{
-                        background: 'var(--md-surface-container)',
-                        border: '1px solid var(--md-outline-variant)',
-                        borderRadius: 'var(--shape-md)',
+                        background: p.isYou ? 'var(--md-primary-container)' : 'var(--md-surface-container-high)',
+                        borderRadius: 'var(--shape-full)',
+                        color: p.isYou ? 'var(--md-on-primary-container)' : 'var(--md-on-surface-variant)',
                       }}
                     >
-                      <p
-                        style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--md-on-surface)' }}
-                      >
-                        {label}
+                      {name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium leading-5" style={{ color: 'var(--md-on-surface)' }}>
+                        {name}
+                        {p.isYou ? (
+                          <span className="ml-2 text-xs font-normal" style={{ color: 'var(--md-primary)' }}>
+                            You
+                          </span>
+                        ) : null}
                       </p>
-                      <p
-                        className="mt-0.5"
-                        style={{ fontSize: '0.75rem', color: 'var(--md-on-surface-variant)' }}
-                      >
-                        {length}
+                      <p className="mt-0.5 flex items-center gap-1 text-xs leading-4" style={{ color: 'var(--md-on-surface-variant)' }}>
+                        <Languages size={12} />
+                        {formatLangPair(p.sourceLang, p.targetLang)}
                       </p>
-                      {r.finalizedAt ? (
-                        <AuthenticatedAudio
-                          src={r.audioUrl}
-                          token={token}
-                          className="mt-3 w-full"
-                        />
-                      ) : (
-                        <p
-                          className="mt-2 text-xs"
-                          style={{ color: '#f59e0b' }}
-                        >
-                          This recording is still being saved.
+                    </div>
+                    {p.isInitiator ? (
+                      <span className="rounded-full px-2 py-1 text-xs" style={{ background: 'var(--md-surface-container)', color: 'var(--md-outline)' }}>
+                        Host
+                      </span>
+                    ) : null}
+                  </li>
+                )
+              })}
+            </ul>
+          </Panel>
+
+          <Panel title="Session info" icon={CalendarDays} className="shrink-0">
+            <div className="space-y-3 p-4 text-sm leading-5" style={{ color: 'var(--md-on-surface-variant)' }}>
+              <div>
+                <p className="text-xs font-medium uppercase" style={{ color: 'var(--md-outline)' }}>
+                  Languages
+                </p>
+                <p className="mt-1" style={{ color: 'var(--md-on-surface)' }}>
+                  {languageSummary || 'Unavailable'}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase" style={{ color: 'var(--md-outline)' }}>
+                  Full session ID
+                </p>
+                <p className="mt-1 break-all font-mono text-xs" style={{ color: 'var(--md-on-surface)' }}>
+                  {detail.sessionId}
+                </p>
+              </div>
+            </div>
+          </Panel>
+
+          <Panel title="Audio recordings" icon={FileAudio} className="min-h-0 flex-1">
+            <div className="min-h-0 flex-1 overflow-y-auto p-4">
+              {detail.recordings.length === 0 ? (
+                <div className="flex min-h-40 flex-col items-center justify-center gap-2 text-center">
+                  <Mic size={30} style={{ color: 'var(--md-outline)' }} />
+                  <p className="text-sm" style={{ color: 'var(--md-on-surface-variant)' }}>
+                    No audio was saved for this session.
+                  </p>
+                </div>
+              ) : (
+                <ul className="space-y-3">
+                  {detail.recordings.map((r) => {
+                    const owner = r.participantId ? participantByDbId.get(r.participantId) : undefined
+                    const label = recordingLabel(r.kind, owner)
+                    const length =
+                      r.durationMs && r.durationMs > 0
+                        ? formatDurationMs(r.durationMs)
+                        : r.finalizedAt
+                          ? 'Ready to play'
+                          : 'Still processing'
+
+                    return (
+                      <li
+                        key={r.id}
+                        className="p-3"
+                        style={{
+                          background: 'var(--md-surface-container)',
+                          border: '1px solid var(--md-outline-variant)',
+                          borderRadius: 'var(--shape-sm)',
+                        }}
+                      >
+                        <div className="mb-3 flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium leading-5" style={{ color: 'var(--md-on-surface)' }}>
+                              {label}
+                            </p>
+                            <p className="text-xs leading-4" style={{ color: 'var(--md-on-surface-variant)' }}>
+                              {length}
+                            </p>
+                          </div>
+                          <FileAudio size={17} style={{ color: 'var(--md-primary)' }} />
+                        </div>
+                        {r.finalizedAt ? (
+                          <AuthenticatedAudio src={r.audioUrl} token={token} className="w-full" />
+                        ) : (
+                          <p className="text-xs" style={{ color: '#f59e0b' }}>
+                            This recording is still being saved.
+                          </p>
+                        )}
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </div>
+          </Panel>
+        </div>
+
+        <Panel title="Transcript" icon={MessageSquare} className="min-h-0">
+          <div className="min-h-0 flex-1 overflow-y-auto p-4">
+            {sourceMessages.length === 0 ? (
+              <div className="flex min-h-80 flex-col items-center justify-center gap-2 text-center">
+                <MessageSquare size={34} style={{ color: 'var(--md-outline)' }} />
+                <p className="text-sm" style={{ color: 'var(--md-on-surface-variant)' }}>
+                  No transcript was saved for this session.
+                </p>
+              </div>
+            ) : (
+              <ol className="space-y-3">
+                {sourceMessages.map((t) => {
+                  const speaker = t.participantId ? participantByDbId.get(t.participantId) : undefined
+                  const isTranslation = t.role === 'translation'
+                  return (
+                    <li
+                      key={t.id}
+                      className="flex gap-3"
+                    >
+                      <div
+                        className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center"
+                        style={{
+                          background: isTranslation ? 'var(--md-secondary-container)' : 'var(--md-primary-container)',
+                          borderRadius: 'var(--shape-full)',
+                          color: isTranslation ? 'var(--md-on-secondary-container)' : 'var(--md-on-primary-container)',
+                        }}
+                      >
+                        {isTranslation ? <Languages size={15} /> : <UserRound size={15} />}
+                      </div>
+                      <article
+                        className="min-w-0 flex-1 p-3"
+                        style={{
+                          background: 'var(--md-surface-container)',
+                          border: '1px solid var(--md-outline-variant)',
+                          borderRadius: 'var(--shape-sm)',
+                        }}
+                      >
+                        <div className="mb-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-4" style={{ color: 'var(--md-outline)' }}>
+                          <span style={{ color: 'var(--md-on-surface)', fontWeight: 500 }}>
+                            {isTranslation ? 'Translation' : speaker ?? 'Speaker'}
+                          </span>
+                          <span>{t.language.toUpperCase()}</span>
+                          <span>{formatSessionDate(t.recordedAt)}</span>
+                        </div>
+                        <p className="whitespace-pre-wrap text-sm leading-6" style={{ color: 'var(--md-on-surface-variant)' }}>
+                          {t.text}
                         </p>
-                      )}
+                      </article>
                     </li>
                   )
                 })}
-              </ul>
+              </ol>
             )}
           </div>
-        </section>
+        </Panel>
       </div>
     </main>
   )

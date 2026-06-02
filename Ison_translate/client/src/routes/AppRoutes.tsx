@@ -8,6 +8,7 @@ import { SettingPage } from "../pages/SettingPage"
 import { SessionDetailPage } from "../pages/SessionDetailPage"
 import { Navigate, Route, Routes } from "react-router-dom"
 import { LanguageSetupPage } from "../pages/LanguageSetupPage"
+import { UserManagementPage } from "../pages/UserManagemenetPage"
 
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -65,6 +66,14 @@ export function AppRoutes() {
             element={
               <RequireAuth>
                 <SessionDetailPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="user-management"
+            element={
+              <RequireAuth>
+                <UserManagementPage />
               </RequireAuth>
             }
           />
