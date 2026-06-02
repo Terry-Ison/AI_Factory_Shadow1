@@ -1,4 +1,4 @@
-import { History, LogOut, Mic, User } from 'lucide-react'
+import { History, LayoutDashboard, LogOut, Mic, Settings, User, Users } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
@@ -25,7 +25,7 @@ export function Sidebar({ collapsed }: Props) {
 
   return (
     <aside
-      className="flex shrink-0 flex-col"
+      className="flex shrink-0 flex-col py-2"
       style={{
         width: collapsed ? '4.5rem' : '15rem',
         transition: 'width 250ms cubic-bezier(0.2, 0, 0, 1)',
@@ -34,22 +34,19 @@ export function Sidebar({ collapsed }: Props) {
         overflow: 'hidden',
       }}
     >
-      {/* Section heading — only visible when expanded */}
-      {!collapsed && (
-        <div
-          className="px-4 pb-1 pt-5"
-          style={{
-            fontSize: '0.75rem',
-            fontWeight: 500,
-            letterSpacing: '0.03125rem',
-            color: 'var(--md-on-surface-variant)',
-          }}
-        >
-          MENU
-        </div>
-      )}
+
 
       <nav className="flex flex-1 flex-col gap-0.5 px-2 py-2">
+        {!isGuest && user && (
+
+          <NavItem
+            icon={<LayoutDashboard size={20} />}
+            label="Dashboard"
+            collapsed={collapsed}
+            active={isActive('/app/dashboard')}
+            onClick={() => navigate('/app/dashboard')}
+          />
+        )}
         <NavItem
           icon={<Mic size={20} />}
           label="Translate"
@@ -57,6 +54,14 @@ export function Sidebar({ collapsed }: Props) {
           active={isActive('/app/translate')}
           onClick={() => navigate('/app/translate')}
         />
+        <NavItem
+          icon={<Users size={20} />}
+          label="User Management"
+          collapsed={collapsed}
+          active={isActive('/app/user-management')}
+          onClick={() => navigate('/app/user-management')}
+        />
+
         {!isGuest && user && (
           <NavItem
             icon={<History size={20} />}
@@ -66,6 +71,18 @@ export function Sidebar({ collapsed }: Props) {
             onClick={() => navigate('/app/history')}
           />
         )}
+        {
+          !isGuest && user && (
+            <NavItem
+              icon={<Settings size={20} />}
+              label="Settings"
+              collapsed={collapsed}
+              active={isActive('/app/settings')}
+              onClick={() => navigate('/app/settings')}
+            />
+          )
+        }
+
       </nav>
 
       {/* User section */}
