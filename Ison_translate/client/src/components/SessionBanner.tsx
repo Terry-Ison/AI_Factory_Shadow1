@@ -103,7 +103,7 @@ export function SessionBanner({
 
   return (
     <div
-      className="sticky top-0 z-10 shrink-0"
+      className="sticky top-0  shrink-0"
       style={{
         background: 'var(--md-surface-container)',
         borderBottom: '1px solid var(--md-outline-variant)',
@@ -251,42 +251,31 @@ export function SessionBanner({
           {/* Right: action buttons */}
           {session && (
             <div className="flex flex-wrap items-center gap-2">
-              <button
-                onClick={onToggleMute}
-                className="md-btn md-btn-tonal"
-                style={
-                  muted
-                    ? {
-                        background: 'var(--md-error-container)',
-                        color: 'var(--md-on-error-container)',
-                        height: '2rem',
-                        fontSize: '0.75rem',
-                        padding: '0 0.75rem',
-                      }
-                    : { height: '2rem', fontSize: '0.75rem', padding: '0 0.75rem' }
-                }
-              >
+              <Button variant="default" size="default" onClick={onToggleMute} >
                 {muted ? <MicOff size={14} /> : <Mic size={14} />}
                 {muted ? 'Unmute' : 'Mute'}
-              </button>
+              </Button>
 
-              <Button variant="outline" size="sm" onClick={onJoinDifferent} leftIcon={<LogIn size={14} />}>
+              <Button variant="outline" size="default" onClick={onJoinDifferent} >
+                <LogIn size={14} />
                 Join different session
               </Button>
 
-              <Button variant="error" size="sm" onClick={onLeave} leftIcon={<PhoneOff size={14} />}>
+              <Button variant="destructive" size="sm" onClick={onLeave} >
+                <PhoneOff size={14} />
                 Leave
               </Button>
 
               <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
+                variant="default"
+                size="default"
+                onClick={() => {  
                   setInviteError(null)
                   setInviteSuccess(null)
                   setInviteOpen(true)
                 }}
               >
+                <Send size={14} />
                 Invite User
               </Button>
 

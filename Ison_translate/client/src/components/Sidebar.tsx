@@ -35,7 +35,7 @@ export function Sidebar({ collapsed, onToggleSidebar }: Props) {
       <button onClick={onToggleSidebar} className={`absolute ${!collapsed ? 'left-56' : 'left-14'} top-18 z-10 bg-white rounded-full shadow-md bg-gray-400 p-1 cursor-pointer hover:bg-gray-100`}>
         {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
       </button>
-      <nav className="flex flex-1 flex-col gap-0.5 px-2 py-2">
+      <nav className="flex flex-1 flex-col gap-0.5 px-2 py-2 pt-6">
         {!isGuest && user && (
 
           <NavItem

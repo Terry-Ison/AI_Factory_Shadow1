@@ -1,24 +1,26 @@
 import {
-  CalendarDays,
-  ChevronRight,
   Clock,
+  Eye,
   FileAudio,
-  Languages,
   MessageSquare,
   Mic,
+  MoreHorizontal,
   Search,
   SlidersHorizontal,
-  Sparkles,
-  Users,
+  Trash2,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { TablePagination } from '@/components/ui/TablePagination'
+import { cn } from '@/lib/utils'
 import { useAuth } from '../context/AuthContext'
 import { fetchHistorySessions, type HistorySessionSummary } from '../lib/api'
 import {
   formatDurationMs,
   formatLangPair,
-  formatRelativeDate,
   participantDisplayName,
   sessionDurationMs,
   sessionSubtitle,
@@ -36,180 +38,168 @@ const filters: { label: string; value: HistoryFilter }[] = [
   { label: 'Active', value: 'active' },
 ]
 
-function StatTile({
-  icon: Icon,
-  label,
-  value,
+function SessionActionsMenu({ onView, onDelete }: { onView: () => void; onDelete: () => void }) {
+  const [open, setOpen] = useState(false)
+  const itemClass =
+    'flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm text-[var(--md-on-surface)] outline-none hover:bg-[var(--md-surface-container)] focus:bg-[var(--md-surface-container)]'
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[var(--md-on-surface-variant)] transition hover:bg-[var(--md-surface-container)]"
+          aria-label="Session actions"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <MoreHorizontal size={16} />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" sideOffset={6} className="w-36 p-1">
+        <button
+          type="button"
+          className={itemClass}
+          onClick={() => {
+            onView()
+            setOpen(false)
+          }}
+        >
+          <Eye size={15} />
+          View
+        </button>
+        <button
+          type="button"
+          className={cn(itemClass, 'text-red-600 hover:bg-red-500/10 focus:bg-red-500/10')}
+          onClick={() => {
+            onDelete()
+            setOpen(false)
+          }}
+        >
+          <Trash2 size={15} />
+          Delete
+        </button>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+function SessionsTable({
+  sessions: rows,
+  onView,
+  onDelete,
 }: {
-  icon: typeof CalendarDays
-  label: string
-  value: string | number
+  sessions: HistorySessionSummary[]
+  onView: (session: HistorySessionSummary) => void
+  onDelete: (session: HistorySessionSummary) => void
 }) {
   return (
-    <div
-      className="flex min-h-15 items-center gap-3 p-4"
-      style={{
-        background: 'var(--md-surface-container)',
-        border: '1px solid var(--md-outline-variant)',
-        borderRadius: 'var(--shape-sm)',
-      }}
-    >
-      <span
-        className="flex h-10 w-10 shrink-0 items-center justify-center"
-        style={{
-          background: 'var(--md-secondary-container)',
-          borderRadius: 'var(--shape-full)',
-          color: 'var(--md-on-secondary-container)',
-        }}
-      >
-        <Icon size={18} />
-      </span>
-      <div className="min-w-0">
-        <p className="text-2xl leading-8" style={{ color: 'var(--md-on-surface)' }}>
-          {value}
-        </p>
-        <p className="text-xs font-medium uppercase" style={{ color: 'var(--md-outline)' }}>
-          {label}
-        </p>
-      </div>
-    </div>
+    <Table>
+      <TableHeader>
+        <TableRow className="border-[var(--md-outline-variant)] hover:bg-transparent">
+          <TableHead className="pl-4 text-xs font-semibold uppercase tracking-wide text-[var(--md-outline)]">Session</TableHead>
+          <TableHead className="hidden text-xs font-semibold uppercase tracking-wide text-[var(--md-outline)] md:table-cell">Participants</TableHead>
+          <TableHead className="hidden text-xs font-semibold uppercase tracking-wide text-[var(--md-outline)] lg:table-cell">Languages</TableHead>
+          <TableHead className="text-xs font-semibold uppercase tracking-wide text-[var(--md-outline)]">Status</TableHead>
+          <TableHead className="hidden text-xs font-semibold uppercase tracking-wide text-[var(--md-outline)] sm:table-cell">Duration</TableHead>
+          <TableHead className="hidden text-xs font-semibold uppercase tracking-wide text-[var(--md-outline)] xl:table-cell">When</TableHead>
+          <TableHead className="hidden text-xs font-semibold uppercase tracking-wide text-[var(--md-outline)] lg:table-cell">Assets</TableHead>
+          <TableHead className="w-12 pr-4 text-right text-xs font-semibold uppercase tracking-wide text-[var(--md-outline)]" />
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {rows.map((session) => {
+          const badge = statusBadge(session.status)
+          const title = sessionTitle(session.participants)
+          const subtitle = sessionSubtitle(session.startedAt, session.endedAt, session.status)
+          const code = shortSessionCode(session.sessionId)
+          const duration = formatDurationMs(sessionDurationMs(session.startedAt, session.endedAt))
+          const languageSummary = [
+            ...new Set(session.participants.map((p) => formatLangPair(p.sourceLang, p.targetLang))),
+          ].join(' / ')
+          const people = session.participants.map((p) => participantDisplayName(p)).join(', ')
+
+          return (
+            <TableRow
+              key={session.sessionId}
+              className="cursor-pointer border-[var(--md-outline-variant)] hover:bg-[var(--md-surface-container)]/60"
+              onClick={() => onView(session)}
+            >
+              <TableCell className="pl-4">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span
+                    className="flex h-9 w-9 shrink-0 items-center justify-center"
+                    style={{
+                      background:
+                        session.status === 'active'
+                          ? 'var(--md-primary-container)'
+                          : 'var(--md-surface-container-high)',
+                      borderRadius: 'var(--shape-sm)',
+                      color:
+                        session.status === 'active'
+                          ? 'var(--md-on-primary-container)'
+                          : 'var(--md-on-surface-variant)',
+                    }}
+                  >
+                    {session.status === 'active' ? <Mic size={16} /> : <MessageSquare size={16} />}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-[var(--md-on-surface)]">{title}</p>
+                    <p className="truncate font-mono text-xs text-[var(--md-outline)]">#{code}</p>
+                    <p className="mt-0.5 truncate text-xs text-[var(--md-on-surface-variant)] md:hidden">{subtitle}</p>
+                  </div>
+                </div>
+              </TableCell>
+              <TableCell className="hidden max-w-[10rem] truncate text-[var(--md-on-surface-variant)] md:table-cell">
+                {people || `${session.participantCount} participants`}
+              </TableCell>
+              <TableCell className="hidden max-w-[10rem] truncate text-[var(--md-on-surface-variant)] lg:table-cell">
+                {languageSummary || '—'}
+              </TableCell>
+              <TableCell>
+                <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium" style={badge.style}>
+                  {badge.label}
+                </span>
+              </TableCell>
+              <TableCell className="hidden text-[var(--md-on-surface-variant)] sm:table-cell">{duration}</TableCell>
+              <TableCell className="hidden text-[var(--md-on-surface-variant)] xl:table-cell">{subtitle}</TableCell>
+              <TableCell className="hidden lg:table-cell">
+                <div className="flex flex-wrap gap-1">
+                  {session.hasTranscript && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-[var(--md-secondary-container)] px-2 py-0.5 text-[0.6875rem] text-[var(--md-on-secondary-container)]">
+                      <MessageSquare size={11} />
+                      Text
+                    </span>
+                  )}
+                  {session.hasRecording && (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-[var(--md-outline-variant)] px-2 py-0.5 text-[0.6875rem] text-[var(--md-on-surface-variant)]">
+                      <FileAudio size={11} />
+                      Audio
+                    </span>
+                  )}
+                </div>
+              </TableCell>
+              <TableCell className="pr-4 text-right" onClick={(e) => e.stopPropagation()}>
+                <SessionActionsMenu
+                  onView={() => onView(session)}
+                  onDelete={() => onDelete(session)}
+                />
+              </TableCell>
+            </TableRow>
+          )
+        })}
+      </TableBody>
+    </Table>
   )
 }
 
-function SessionCard({ session, onOpen }: { session: HistorySessionSummary; onOpen: () => void }) {
-  const badge = statusBadge(session.status)
-  const title = sessionTitle(session.participants)
-  const subtitle = sessionSubtitle(session.startedAt, session.endedAt, session.status)
-  const code = shortSessionCode(session.sessionId)
-  const duration = formatDurationMs(sessionDurationMs(session.startedAt, session.endedAt))
-
-  const languageSummary = [
-    ...new Set(session.participants.map((p) => formatLangPair(p.sourceLang, p.targetLang))),
-  ].join(' / ')
-
-  const people = session.participants.map((p) => participantDisplayName(p)).join(', ')
-
+function TableLoadingState() {
   return (
-    <li>
-      <button
-        type="button"
-        onClick={onOpen}
-        className="group grid w-full grid-cols-[auto_1fr_auto] gap-4 p-4 text-left transition duration-200 hover:-translate-y-0.5 md:p-5"
-        style={{
-          background: 'var(--md-surface-container-lowest)',
-          border: '1px solid var(--md-outline-variant)',
-          borderRadius: 'var(--shape-sm)',
-          boxShadow: 'var(--elevation-0)',
-        }}
-      >
-        <div
-          className="flex h-12 w-12 items-center justify-center"
-          style={{
-            background: session.status === 'active' ? 'var(--md-primary-container)' : 'var(--md-surface-container-high)',
-            borderRadius: 'var(--shape-sm)',
-            color: session.status === 'active' ? 'var(--md-on-primary-container)' : 'var(--md-on-surface-variant)',
-          }}
-        >
-          {session.status === 'active' ? <Mic size={20} /> : <MessageSquare size={20} />}
-        </div>
-
-        <div className="min-w-0 space-y-3">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h2
-                className="truncate text-base font-medium leading-6"
-                style={{ color: 'var(--md-on-surface)' }}
-              >
-                {title}
-              </h2>
-              <p className="mt-1 text-sm leading-5" style={{ color: 'var(--md-on-surface-variant)' }}>
-                {subtitle}
-              </p>
-            </div>
-            <span
-              style={{
-                ...badge.style,
-                flexShrink: 0,
-                borderRadius: 'var(--shape-full)',
-                padding: '0.1875rem 0.625rem',
-                fontSize: '0.75rem',
-                fontWeight: 500,
-                lineHeight: '1rem',
-              }}
-            >
-              {badge.label}
-            </span>
-          </div>
-
-          <div className="grid gap-2 text-xs leading-4 sm:grid-cols-3" style={{ color: 'var(--md-on-surface-variant)' }}>
-            <span className="inline-flex min-w-0 items-center gap-1.5">
-              <Languages size={13} style={{ color: 'var(--md-primary)' }} />
-              <span className="truncate">{languageSummary || 'Languages unavailable'}</span>
-            </span>
-            <span className="inline-flex min-w-0 items-center gap-1.5">
-              <Users size={13} style={{ color: 'var(--md-primary)' }} />
-              <span className="truncate">{people || `${session.participantCount} participants`}</span>
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <Clock size={13} style={{ color: 'var(--md-primary)' }} />
-              {duration}
-            </span>
-          </div>
-
-          {session.transcriptPreview ? (
-            <p
-              className="line-clamp-2 rounded-md px-3 py-2 text-sm leading-5"
-              style={{
-                background: 'var(--md-surface-container)',
-                color: 'var(--md-on-surface-variant)',
-              }}
-            >
-              {session.transcriptPreview}
-              {session.transcriptPreview.length >= 160 ? '...' : ''}
-            </p>
-          ) : null}
-
-          <div className="flex flex-wrap items-center gap-2">
-            {session.hasTranscript && (
-              <span className="md-chip md-chip-tonal h-7 text-xs">
-                <MessageSquare size={12} />
-                Transcript
-              </span>
-            )}
-            {session.hasRecording && (
-              <span className="md-chip h-7 text-xs">
-                <FileAudio size={12} />
-                Audio
-              </span>
-            )}
-            <span className="font-mono text-xs" style={{ color: 'var(--md-outline)' }}>
-              #{code}
-            </span>
-          </div>
-        </div>
-
-        <div
-          className="flex shrink-0 items-center self-center transition-transform group-hover:translate-x-1"
-          style={{ color: 'var(--md-outline)' }}
-        >
-          <ChevronRight size={20} />
-        </div>
-      </button>
-    </li>
-  )
-}
-
-function LoadingState() {
-  return (
-    <div className="space-y-3">
-      {[1, 2, 3].map((i) => (
+    <div className="space-y-0">
+      {[1, 2, 3, 4, 5].map((i) => (
         <div
           key={i}
-          className="h-40 animate-pulse"
-          style={{
-            borderRadius: 'var(--shape-sm)',
-            background: 'var(--md-surface-container)',
-          }}
+          className="h-14 animate-pulse border-b border-[var(--md-outline-variant)]"
+          style={{ background: 'var(--md-surface-container)' }}
         />
       ))}
     </div>
@@ -224,6 +214,8 @@ export function HistoryPage() {
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<HistoryFilter>('all')
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   useEffect(() => {
     if (!token) return
@@ -246,14 +238,6 @@ export function HistoryPage() {
       cancelled = true
     }
   }, [token])
-
-  const stats = useMemo(() => {
-    const transcriptCount = sessions.filter((s) => s.hasTranscript).length
-    const audioCount = sessions.filter((s) => s.hasRecording).length
-    const activeCount = sessions.filter((s) => s.status === 'active').length
-
-    return { transcriptCount, audioCount, activeCount }
-  }, [sessions])
 
   const filteredSessions = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
@@ -285,97 +269,98 @@ export function HistoryPage() {
     })
   }, [filter, query, sessions])
 
-  const latestSession = sessions[0]
+  useEffect(() => {
+    setPage(1)
+  }, [query, filter, pageSize])
+
+  const totalPages = Math.max(1, Math.ceil(filteredSessions.length / pageSize))
+  const safePage = Math.min(page, totalPages)
+
+  const paginatedSessions = useMemo(() => {
+    const start = (safePage - 1) * pageSize
+    return filteredSessions.slice(start, start + pageSize)
+  }, [filteredSessions, pageSize, safePage])
+
+  const openSession = (session: HistorySessionSummary) => {
+    navigate(`/app/history/${encodeURIComponent(session.sessionId)}`)
+  }
 
   return (
     <main className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col overflow-hidden p-4 md:p-6">
       <div className="flex min-h-0 flex-1 flex-col gap-5">
         <header
-          className="shrink-0 overflow-hidden p-5 md:p-6"
+          className="shrink-0 overflow-hidden"
+        >
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-2xl">
+              <h1 className="text-xl leading-10 md:text-2xl font-bold" style={{ color: 'var(--md-on-surface)' }}>
+                Your conversations
+              </h1>
+              <p className="text-sm leading-4" style={{ color: 'var(--md-on-surface-variant)' }}>
+                Review past translation sessions, saved transcripts, recordings, languages, and people in one focused place.
+              </p>
+            </div>
+          </div>
+        </header>
+
+        <section
+          className="flex min-h-0 flex-1 flex-col "
           style={{
             background: 'var(--md-surface-container-lowest)',
             border: '1px solid var(--md-outline-variant)',
             borderRadius: 'var(--shape-sm)',
           }}
         >
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-2xl">
-              <h1 className="text-3xl leading-10 md:text-4xl md:leading-[3rem]" style={{ color: 'var(--md-on-surface)' }}>
-                Your conversations
-              </h1>
-              <p className="mt-2 text-sm leading-6" style={{ color: 'var(--md-on-surface-variant)' }}>
-                Review past translation sessions, saved transcripts, recordings, languages, and people in one focused place.
-              </p>
-            </div>
-
-            {/* <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-3 lg:w-[31rem]">
-              <StatTile icon={CalendarDays} label="Sessions" value={sessions.length} />
-              <StatTile icon={MessageSquare} label="Transcripts" value={stats.transcriptCount} />
-              <StatTile icon={FileAudio} label="Recordings" value={stats.audioCount} />
-            </div> */}
-          </div>
-        </header>
-
-        <section className="flex min-h-0 flex-1 flex-col gap-4">
           <div
-            className="shrink-0 p-3"
-            style={{
-              background: 'var(--md-surface-container-lowest)',
-              border: '1px solid var(--md-outline-variant)',
-              borderRadius: 'var(--shape-sm)',
-            }}
+            className="flex shrink-0 flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
+            style={{ borderBottom: '1px solid var(--md-outline-variant)' }}
           >
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <label
-                className="flex min-h-12 flex-1 items-center gap-3 px-3"
-                style={{
-                  background: 'var(--md-surface-container)',
-                  border: '1px solid var(--md-outline-variant)',
-                  borderRadius: 'var(--shape-sm)',
-                  color: 'var(--md-on-surface-variant)',
-                }}
-              >
-                <Search size={18} />
-                <input
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search people, languages, transcripts, or session codes"
-                  className="min-w-0 flex-1 bg-transparent text-sm outline-none"
-                  style={{ color: 'var(--md-on-surface)' }}
-                />
-              </label>
+            <label
+              className="flex py-2 flex-1 items-center gap-3 px-3"
+              style={{
+                background: 'var(--md-surface-container)',
+                border: '1px solid var(--md-outline-variant)',
+                borderRadius: 'var(--shape-sm)',
+                color: 'var(--md-on-surface-variant)',
+              }}
+            >
+              <Search size={18} />
+              <input
+                type="text"
+                name="search"
+                id="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search people, languages, transcripts, or session codes"
+                className="min-w-0 flex-1 bg-transparent text-sm"
+                style={{ color: 'var(--md-on-surface)' }}
+              />
+            </label>
 
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 lg:pb-0">
-                
+            <Select value={filter} onValueChange={(value) => setFilter(value as HistoryFilter)}>
+              <SelectTrigger
+                size="default"
+                className="py-2 gap-2 border-[var(--md-outline-variant)] bg-[var(--md-surface-container)] px-3 text-[var(--md-on-surface)] shadow-none hover:bg-[var(--md-surface-container-high)]"
+              >
+                <SlidersHorizontal size={16} className="shrink-0 text-[var(--md-outline)]" />
+                <SelectValue placeholder="Filter" />
+              </SelectTrigger>
+              <SelectContent align="end" className="min-w-[9.5rem]">
                 {filters.map((item) => (
-                  <button
-                    key={item.value}
-                    type="button"
-                    onClick={() => setFilter(item.value)}
-                    className="md-chip shrink-0"
-                    style={
-                      filter === item.value
-                        ? {
-                            background: 'var(--md-primary-container)',
-                            borderColor: 'var(--md-primary-container)',
-                            color: 'var(--md-on-primary-container)',
-                          }
-                        : undefined
-                    }
-                  >
+                  <SelectItem key={item.value} value={item.value}>
                     {item.label}
-                  </button>
+                  </SelectItem>
                 ))}
-              </div>
-            </div>
+              </SelectContent>
+            </Select>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto pr-1">
-            {loading && <LoadingState />}
+          <div className="min-h-0 flex-1 overflow-auto">
+            {loading && <TableLoadingState />}
 
             {error && (
               <div
-                className="px-4 py-3 text-sm"
+                className="m-4 px-4 py-3 text-sm"
                 style={{
                   background: 'var(--md-error-container)',
                   color: 'var(--md-on-error-container)',
@@ -387,14 +372,7 @@ export function HistoryPage() {
             )}
 
             {!loading && !error && sessions.length === 0 && (
-              <div
-                className="flex min-h-80 flex-col items-center justify-center gap-3 px-6 py-16 text-center"
-                style={{
-                  background: 'var(--md-surface-container-lowest)',
-                  border: '1px dashed var(--md-outline-variant)',
-                  borderRadius: 'var(--shape-sm)',
-                }}
-              >
+              <div className="flex min-h-80 flex-col items-center justify-center gap-3 px-6 py-16 text-center">
                 <Clock size={40} style={{ color: 'var(--md-outline)' }} />
                 <p className="text-base font-medium leading-6" style={{ color: 'var(--md-on-surface)' }}>
                   No conversations yet
@@ -406,14 +384,7 @@ export function HistoryPage() {
             )}
 
             {!loading && !error && sessions.length > 0 && filteredSessions.length === 0 && (
-              <div
-                className="flex min-h-64 flex-col items-center justify-center gap-3 px-6 py-12 text-center"
-                style={{
-                  background: 'var(--md-surface-container-lowest)',
-                  border: '1px solid var(--md-outline-variant)',
-                  borderRadius: 'var(--shape-sm)',
-                }}
-              >
+              <div className="flex min-h-64 flex-col items-center justify-center gap-3 px-6 py-12 text-center">
                 <Search size={34} style={{ color: 'var(--md-outline)' }} />
                 <p className="text-base font-medium leading-6" style={{ color: 'var(--md-on-surface)' }}>
                   No matching conversations
@@ -425,17 +396,23 @@ export function HistoryPage() {
             )}
 
             {!loading && !error && filteredSessions.length > 0 && (
-              <ul className="space-y-3 pb-4">
-                {filteredSessions.map((s) => (
-                  <SessionCard
-                    key={s.sessionId}
-                    session={s}
-                    onOpen={() => navigate(`/app/history/${encodeURIComponent(s.sessionId)}`)}
-                  />
-                ))}
-              </ul>
+              <SessionsTable
+                sessions={paginatedSessions}
+                onView={openSession}
+                onDelete={(session) => window.alert(`Delete session #${shortSessionCode(session.sessionId)} — wire to API when ready.`)}
+              />
             )}
           </div>
+
+          {!loading && !error && filteredSessions.length > 0 && (
+            <TablePagination
+              page={safePage}
+              pageSize={pageSize}
+              total={filteredSessions.length}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          )}
         </section>
       </div>
     </main>

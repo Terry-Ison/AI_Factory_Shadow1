@@ -5,25 +5,41 @@ import {
   Ban,
   CalendarClock,
   CheckCircle2,
+  ChevronDown,
   Clock,
+  Eye,
   FileAudio,
   Languages,
   Mail,
   MapPin,
   MessageSquare,
+  MoreHorizontal,
+  Pencil,
   Search,
   Send,
   ShieldCheck,
   SlidersHorizontal,
+  Trash2,
   UserCheck,
   UserPlus,
   Users,
-  X,
 } from 'lucide-react'
-import { useMemo, useRef, useState, type ReactNode } from 'react'
-import { Button } from '../components/ui/Button'
-import { Input } from '../components/ui/Input'
-import { useOnClickOutside } from '../hooks/useOnClickOutside'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { Button } from '@/components/ui/Button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Field, FieldLabel } from '@/components/ui/field'
+import { Input } from '@/components/ui/Input'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Textarea } from '@/components/ui/textarea'
+import { cn } from '@/lib/utils'
 
 type UserStatus = 'active' | 'review' | 'suspended'
 
@@ -153,7 +169,129 @@ const users: AdminUser[] = [
       { id: 'n3', title: 'Transcript flagged', detail: 'Automated moderation marked session for review.', time: '4 days ago', tone: 'warning' },
     ],
   },
+  {
+    id: 'USR-0812',
+    name: 'Elena Novak',
+    email: 'elena.novak@example.com',
+    role: 'Agent',
+    status: 'active',
+    location: 'Prague, CZ',
+    joinedAt: 'Feb 2, 2026',
+    lastSeen: '1 hr ago',
+    sourceLang: 'Czech',
+    targetLang: 'English',
+    sessions: 54,
+    minutes: 720,
+    transcripts: 48,
+    recordings: 31,
+    riskScore: 18,
+    device: 'Chrome on macOS',
+    ipAddress: '89.22.11.4',
+    recentActivity: [],
+  },
+  {
+    id: 'USR-0755',
+    name: 'Marcus Chen',
+    email: 'marcus.chen@example.com',
+    role: 'Customer',
+    status: 'active',
+    location: 'Singapore, SG',
+    joinedAt: 'Jan 22, 2026',
+    lastSeen: '5 hrs ago',
+    sourceLang: 'Mandarin',
+    targetLang: 'English',
+    sessions: 22,
+    minutes: 310,
+    transcripts: 20,
+    recordings: 14,
+    riskScore: 10,
+    device: 'Safari on iOS',
+    ipAddress: '203.12.44.90',
+    recentActivity: [],
+  },
+  {
+    id: 'USR-0701',
+    name: 'Priya Sharma',
+    email: 'priya.sharma@example.com',
+    role: 'Admin',
+    status: 'active',
+    location: 'Delhi, IN',
+    joinedAt: 'Dec 8, 2025',
+    lastSeen: 'Yesterday',
+    sourceLang: 'Hindi',
+    targetLang: 'English',
+    sessions: 120,
+    minutes: 2100,
+    transcripts: 110,
+    recordings: 88,
+    riskScore: 5,
+    device: 'Chrome on Android',
+    ipAddress: '117.88.22.15',
+    recentActivity: [],
+  },
+  {
+    id: 'USR-0688',
+    name: 'Lucas Weber',
+    email: 'lucas.weber@example.com',
+    role: 'Customer',
+    status: 'review',
+    location: 'Berlin, DE',
+    joinedAt: 'Nov 14, 2025',
+    lastSeen: '2 days ago',
+    sourceLang: 'German',
+    targetLang: 'English',
+    sessions: 15,
+    minutes: 190,
+    transcripts: 12,
+    recordings: 6,
+    riskScore: 58,
+    device: 'Firefox on Windows',
+    ipAddress: '91.44.12.8',
+    recentActivity: [],
+  },
+  {
+    id: 'USR-0620',
+    name: 'Amara Okafor',
+    email: 'amara.okafor@example.com',
+    role: 'Customer',
+    status: 'active',
+    location: 'Lagos, NG',
+    joinedAt: 'Oct 3, 2025',
+    lastSeen: '12 min ago',
+    sourceLang: 'English',
+    targetLang: 'French',
+    sessions: 38,
+    minutes: 520,
+    transcripts: 35,
+    recordings: 22,
+    riskScore: 14,
+    device: 'Edge on Windows',
+    ipAddress: '41.203.88.12',
+    recentActivity: [],
+  },
+  {
+    id: 'USR-0599',
+    name: 'James Wilson',
+    email: 'james.wilson@example.com',
+    role: 'Agent',
+    status: 'suspended',
+    location: 'Toronto, CA',
+    joinedAt: 'Sep 19, 2025',
+    lastSeen: '1 week ago',
+    sourceLang: 'English',
+    targetLang: 'French',
+    sessions: 11,
+    minutes: 95,
+    transcripts: 8,
+    recordings: 3,
+    riskScore: 88,
+    device: 'Chrome on Linux',
+    ipAddress: '72.14.201.44',
+    recentActivity: [],
+  },
 ]
+
+const PAGE_SIZE_OPTIONS = [10, 20, 50] as const
 
 const filters: { label: string; value: UserFilter }[] = [
   { label: 'All', value: 'all' },
@@ -205,39 +343,256 @@ function StatCard({ icon, label, value, subtext }: { icon: ReactNode; label: str
   )
 }
 
-function UserRow({ user, onClick }: { user: AdminUser; onClick: () => void }) {
-  const status = statusStyles(user.status)
+function UserActionsMenu({
+  onView,
+  onEdit,
+  onDelete,
+}: {
+  onView: () => void
+  onEdit: () => void
+  onDelete: () => void
+}) {
+  const [open, setOpen] = useState(false)
+
+  const itemClass =
+    'flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm text-[var(--md-on-surface)] outline-none hover:bg-[var(--md-surface-container)] focus:bg-[var(--md-surface-container)]'
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="grid w-full grid-cols-[auto_1fr_auto] gap-4 p-4 text-left transition hover:-translate-y-0.5"
-      style={{ background: 'var(--md-surface-container-lowest)', border: '1px solid var(--md-outline-variant)', borderRadius: 'var(--shape-sm)', color: 'var(--md-on-surface)' }}
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[var(--md-on-surface-variant)] transition hover:bg-[var(--md-surface-container)]"
+          aria-label="User actions"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <MoreHorizontal size={16} />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" sideOffset={6} className="w-36 p-1">
+        <button
+          type="button"
+          className={itemClass}
+          onClick={() => {
+            onView()
+            setOpen(false)
+          }}
+        >
+          <Eye size={15} />
+          View
+        </button>
+        <button
+          type="button"
+          className={itemClass}
+          onClick={() => {
+            onEdit()
+            setOpen(false)
+          }}
+        >
+          <Pencil size={15} />
+          Edit
+        </button>
+        <button
+          type="button"
+          className={cn(itemClass, 'text-red-600 hover:bg-red-500/10 focus:bg-red-500/10')}
+          onClick={() => {
+            onDelete()
+            setOpen(false)
+          }}
+        >
+          <Trash2 size={15} />
+          Delete
+        </button>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+function UsersTable({
+  users: rows,
+  onView,
+  onEdit,
+  onDelete,
+}: {
+  users: AdminUser[]
+  onView: (user: AdminUser) => void
+  onEdit: (user: AdminUser) => void
+  onDelete: (user: AdminUser) => void
+}) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow className="border-[var(--md-outline-variant)] hover:bg-transparent">
+          <TableHead className="pl-4 text-xs font-semibold uppercase tracking-wide text-[var(--md-outline)]">User</TableHead>
+          <TableHead className="text-xs font-semibold uppercase tracking-wide text-[var(--md-outline)]">Email</TableHead>
+          <TableHead className="text-xs font-semibold uppercase tracking-wide text-[var(--md-outline)]">Role</TableHead>
+          <TableHead className="hidden text-xs font-semibold uppercase tracking-wide text-[var(--md-outline)] lg:table-cell">Location</TableHead>
+          <TableHead className="text-xs font-semibold uppercase tracking-wide text-[var(--md-outline)]">Status</TableHead>
+          <TableHead className="hidden text-xs font-semibold uppercase tracking-wide text-[var(--md-outline)] md:table-cell">Sessions</TableHead>
+          <TableHead className="hidden text-xs font-semibold uppercase tracking-wide text-[var(--md-outline)] sm:table-cell">Risk</TableHead>
+          <TableHead className="hidden text-xs font-semibold uppercase tracking-wide text-[var(--md-outline)] xl:table-cell">Last seen</TableHead>
+          <TableHead className="w-12 pr-4 text-right text-xs font-semibold uppercase tracking-wide text-[var(--md-outline)]" />
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {rows.map((user) => {
+          const status = statusStyles(user.status)
+          return (
+            <TableRow
+              key={user.id}
+              className="border-[var(--md-outline-variant)] hover:bg-[var(--md-surface-container)]/60"
+            >
+              <TableCell className="pl-4">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span
+                    className="flex h-9 w-9 shrink-0 items-center justify-center text-xs font-bold"
+                    style={{
+                      background: 'var(--md-primary-container)',
+                      borderRadius: 'var(--shape-full)',
+                      color: 'var(--md-on-primary-container)',
+                    }}
+                  >
+                    {user.name.charAt(0)}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-[var(--md-on-surface)]">{user.name}</p>
+                    <p className="truncate text-xs text-[var(--md-outline)] lg:hidden">{user.email}</p>
+                  </div>
+                </div>
+              </TableCell>
+              <TableCell className="hidden max-w-[12rem] truncate text-[var(--md-on-surface-variant)] lg:table-cell">
+                {user.email}
+              </TableCell>
+              <TableCell className="text-[var(--md-on-surface-variant)]">{user.role}</TableCell>
+              <TableCell className="hidden text-[var(--md-on-surface-variant)] lg:table-cell">{user.location}</TableCell>
+              <TableCell>
+                <span
+                  className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
+                  style={{ background: status.bg, color: status.color }}
+                >
+                  {status.label}
+                </span>
+              </TableCell>
+              <TableCell className="hidden tabular-nums text-[var(--md-on-surface-variant)] md:table-cell">
+                {user.sessions}
+              </TableCell>
+              <TableCell className="hidden tabular-nums text-[var(--md-on-surface-variant)] sm:table-cell">
+                {user.riskScore}%
+              </TableCell>
+              <TableCell className="hidden text-[var(--md-on-surface-variant)] xl:table-cell">{user.lastSeen}</TableCell>
+              <TableCell className="pr-4 text-right">
+                <UserActionsMenu
+                  onView={() => onView(user)}
+                  onEdit={() => onEdit(user)}
+                  onDelete={() => onDelete(user)}
+                />
+              </TableCell>
+            </TableRow>
+          )
+        })}
+      </TableBody>
+    </Table>
+  )
+}
+
+function UsersTablePagination({
+  page,
+  pageSize,
+  total,
+  onPageChange,
+  onPageSizeChange,
+}: {
+  page: number
+  pageSize: number
+  total: number
+  onPageChange: (page: number) => void
+  onPageSizeChange: (size: number) => void
+}) {
+  const totalPages = Math.max(1, Math.ceil(total / pageSize))
+  const safePage = Math.min(page, totalPages)
+  const start = total === 0 ? 0 : (safePage - 1) * pageSize + 1
+  const end = Math.min(safePage * pageSize, total)
+
+  const pageBtn =
+    'inline-flex h-9 min-w-9 items-center justify-center rounded-lg border px-3 text-sm font-medium transition'
+
+  return (
+    <div
+      className="flex shrink-0 flex-col gap-3 border-t border-[var(--md-outline-variant)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
     >
-      <div className="flex h-12 w-12 items-center justify-center text-sm font-bold" style={{ background: 'var(--md-primary-container)', borderRadius: 'var(--shape-full)', color: 'var(--md-on-primary-container)' }}>
-        {user.name.charAt(0)}
-      </div>
-      <div className="min-w-0">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <p className="truncate text-base font-medium leading-6">{user.name}</p>
-          <span className="shrink-0 rounded-full px-2 py-0.5 text-xs" style={{ background: status.bg, color: status.color }}>
-            {status.label}
-          </span>
+      <p className="text-sm text-[var(--md-on-surface-variant)]">
+        Showing <span className="font-medium text-[var(--md-on-surface)]">{start}</span>–
+        <span className="font-medium text-[var(--md-on-surface)]">{end}</span> of{' '}
+        <span className="font-medium text-[var(--md-on-surface)]">{total}</span> results
+      </p>
+
+      <div className="flex flex-wrap items-center gap-3 sm:justify-end">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-[var(--md-on-surface-variant)]">Rows</span>
+          <div className="relative">
+            <select
+              value={pageSize}
+              onChange={(e) => onPageSizeChange(Number(e.target.value))}
+              className="h-9 appearance-none rounded-lg border border-[var(--md-outline-variant)] bg-[var(--md-surface-container-lowest)] py-0 pl-3 pr-8 text-sm text-[var(--md-on-surface)] outline-none focus:border-[var(--md-primary)]"
+            >
+              {PAGE_SIZE_OPTIONS.map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              size={14}
+              className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[var(--md-outline)]"
+            />
+          </div>
         </div>
-        <p className="truncate text-sm leading-5" style={{ color: 'var(--md-on-surface-variant)' }}>{user.email}</p>
-        <div className="mt-2 grid gap-2 text-xs leading-4 sm:grid-cols-4" style={{ color: 'var(--md-outline)' }}>
-          <span>{user.role}</span>
-          <span>{user.location}</span>
-          <span>{user.sessions} sessions</span>
-          <span>{user.riskScore}% risk</span>
+
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            disabled={safePage <= 1}
+            onClick={() => onPageChange(safePage - 1)}
+            className={cn(
+              pageBtn,
+              'border-[var(--md-outline-variant)] bg-[var(--md-surface-container-lowest)] text-[var(--md-on-surface-variant)]',
+              safePage <= 1 && 'cursor-not-allowed opacity-40',
+            )}
+          >
+            Previous
+          </button>
+
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+            <button
+              key={n}
+              type="button"
+              onClick={() => onPageChange(n)}
+              className={cn(
+                pageBtn,
+                n === safePage
+                  ? 'border-[var(--md-on-surface)] bg-[var(--md-on-surface)] text-[var(--md-surface)]'
+                  : 'border-[var(--md-outline-variant)] bg-[var(--md-surface-container-lowest)] text-[var(--md-on-surface)] hover:bg-[var(--md-surface-container)]',
+              )}
+            >
+              {n}
+            </button>
+          ))}
+
+          <button
+            type="button"
+            disabled={safePage >= totalPages}
+            onClick={() => onPageChange(safePage + 1)}
+            className={cn(
+              pageBtn,
+              'border-[var(--md-outline-variant)] bg-[var(--md-surface-container-lowest)] text-[var(--md-on-surface)]',
+              safePage >= totalPages && 'cursor-not-allowed opacity-40',
+            )}
+          >
+            Next
+          </button>
         </div>
       </div>
-      <div className="hidden text-right text-xs leading-4 md:block" style={{ color: 'var(--md-outline)' }}>
-        <p>Last seen</p>
-        <p className="mt-1" style={{ color: 'var(--md-on-surface-variant)' }}>{user.lastSeen}</p>
-      </div>
-    </button>
+    </div>
   )
 }
 
@@ -261,72 +616,80 @@ function ActivityItem({ item }: { item: AdminUser['recentActivity'][number] }) {
   )
 }
 
-function InviteUserModal({ onClose }: { onClose: () => void }) {
+function InviteUserModal({
+  open,
+  onOpenChange,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
   const [email, setEmail] = useState('')
   const [role, setRole] = useState('Customer')
-  const [message, setMessage] = useState('Join Transly to manage translation sessions and view activity history.')
-  const modalRef = useRef<HTMLDivElement | null>(null)
-
-  useOnClickOutside(modalRef, onClose, true)
+  const [message, setMessage] = useState(
+    'Join Transly to manage translation sessions and view activity history.'
+  )
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'var(--md-scrim)' }}>
-      <div
-        ref={modalRef}
-        className="w-full max-w-lg overflow-hidden"
-        style={{ background: 'var(--md-surface-container-lowest)', border: '1px solid var(--md-outline-variant)', borderRadius: 'var(--shape-sm)', boxShadow: 'var(--elevation-4)' }}
-      >
-        <div className="flex items-center justify-between gap-3 px-5 py-4" style={{ borderBottom: '1px solid var(--md-outline-variant)' }}>
-          <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center" style={{ background: 'var(--md-primary-container)', borderRadius: 'var(--shape-full)', color: 'var(--md-on-primary-container)' }}>
-              <UserPlus size={18} />
-            </span>
-            <div>
-              <h2 className="text-lg font-medium leading-6" style={{ color: 'var(--md-on-surface)' }}>Invite user</h2>
-              <p className="text-sm leading-5" style={{ color: 'var(--md-on-surface-variant)' }}>Send an email invitation to the dashboard.</p>
-            </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-lg">
+        <div className="flex items-start gap-3 border-b px-5 py-4 pr-12">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <UserPlus className="size-[18px]" />
+          </span>
+          <div className="min-w-0 flex-1 space-y-1">
+            <DialogTitle className="text-lg leading-6">Invite user</DialogTitle>
+            <DialogDescription>Send an email invitation to the dashboard.</DialogDescription>
           </div>
-          <button type="button" className="md-icon-btn" onClick={onClose} aria-label="Close invite popup">
-            <X size={20} />
-          </button>
         </div>
 
         <div className="space-y-4 p-5">
-          <Input
-            label="Email address"
-            value={email}
-            onChange={setEmail}
-            placeholder="name@company.com"
-            type="email"
-          />
-          <label className="md-field">
-            <span className="md-field-label">Role</span>
-            <select value={role} onChange={(event) => setRole(event.target.value)} className="md-field-input">
-              <option>Customer</option>
-              <option>Agent</option>
-              <option>Admin</option>
-            </select>
-          </label>
-          <Input
-            label="Invite message"
-            value={message}
-            onChange={setMessage}
-            placeholder="Add a short message"
-            multiline
-            rows={5}
-          />
+          <Field>
+            <FieldLabel htmlFor="invite-email">Email address</FieldLabel>
+            <Input
+              id="invite-email"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="name@company.com"
+              autoComplete="email"
+            />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="invite-role">Role</FieldLabel>
+            <Select value={role} onValueChange={setRole}>
+              <SelectTrigger id="invite-role" className="w-full">
+                <SelectValue placeholder="Select role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Customer">Customer</SelectItem>
+                <SelectItem value="Agent">Agent</SelectItem>
+                <SelectItem value="Admin">Admin</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="invite-message">Invite message</FieldLabel>
+            <Textarea
+              id="invite-message"
+              value={message}
+              onChange={(event) => setMessage(event.target.value)}
+              placeholder="Add a short message"
+              rows={5}
+            />
+          </Field>
         </div>
 
-        <div className="flex flex-wrap justify-end gap-2 px-5 py-4" style={{ borderTop: '1px solid var(--md-outline-variant)' }}>
-          <Button variant="text" onClick={onClose}>
+        <DialogFooter className="gap-2 sm:justify-end m-0">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button variant="filled" onClick={onClose} disabled={!email.trim()} leftIcon={<Send size={16} />}>
+          <Button type="button" disabled={!email.trim()} onClick={() => onOpenChange(false)}>
+            <Send data-icon="inline-start" />
             Send invite
           </Button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -451,6 +814,8 @@ export function UserManagementPage() {
   const [filter, setFilter] = useState<UserFilter>('all')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [inviteOpen, setInviteOpen] = useState(false)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   const filteredUsers = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
@@ -467,6 +832,18 @@ export function UserManagementPage() {
     })
   }, [filter, query])
 
+  useEffect(() => {
+    setPage(1)
+  }, [query, filter, pageSize])
+
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize))
+  const safePage = Math.min(page, totalPages)
+
+  const paginatedUsers = useMemo(() => {
+    const start = (safePage - 1) * pageSize
+    return filteredUsers.slice(start, start + pageSize)
+  }, [filteredUsers, pageSize, safePage])
+
   const selectedUser = selectedId ? users.find((user) => user.id === selectedId) : null
   const activeCount = users.filter((user) => user.status === 'active').length
   const reviewCount = users.filter((user) => user.status === 'review').length
@@ -474,19 +851,15 @@ export function UserManagementPage() {
 
   return (
     <main className="mx-auto flex h-full min-h-0 w-full max-w-7xl flex-col gap-5 overflow-hidden p-4 md:p-6">
-      {inviteOpen && <InviteUserModal onClose={() => setInviteOpen(false)} />}
+      <InviteUserModal open={inviteOpen} onOpenChange={setInviteOpen} />
 
-      <header className="shrink-0 p-5 md:p-6" style={{ background: 'var(--md-surface-container-lowest)', border: '1px solid var(--md-outline-variant)', borderRadius: 'var(--shape-sm)' }}>
+      <header className="shrink-0" >
         <div className="flex flex-col gap-5 ">
           <div className="max-w-2xl">
-            {/* <div className="mb-3 inline-flex items-center gap-2 text-xs font-medium uppercase" style={{ color: 'var(--md-primary)' }}>
-              <ShieldCheck size={14} />
-              Admin dashboard
-            </div> */}
-            <h1 className="text-3xl leading-10 md:text-4xl md:leading-[3rem]" style={{ color: 'var(--md-on-surface)' }}>
+            <h1 className="text-xl leading-10 md:text-2xl font-bold" style={{ color: 'var(--md-on-surface)' }}>
               User management
             </h1>
-            <p className="mt-2 text-sm leading-6" style={{ color: 'var(--md-on-surface-variant)' }}>
+            <p className="text-sm leading-4" style={{ color: 'var(--md-on-surface-variant)' }}>
               Monitor users, invite teammates, review activity, and open full account details from the list.
             </p>
           </div>
@@ -496,7 +869,7 @@ export function UserManagementPage() {
               <UserPlus size={17} />
               Invite user
             </button>
-            <div className="grid min-w-0 gap-2 sm:grid-cols-2 xl:w-auto xl:grid-cols-4">
+            <div className="grid min-w-0 gap-2 sm:grid-cols-2 md:grid-cols-4">
               <StatCard icon={<Users size={14} />} label="Total users" value={users.length} subtext="Registered accounts" />
               <StatCard icon={<UserCheck size={14} />} label="Active" value={activeCount} subtext="Recently healthy" />
               <StatCard icon={<AlertTriangle size={14} />} label="Review" value={reviewCount} subtext="Needs admin check" />
@@ -510,47 +883,55 @@ export function UserManagementPage() {
         <UserDetailView user={selectedUser} onBack={() => setSelectedId(null)} />
       ) : (
         <section className="flex min-h-0 flex-1 flex-col overflow-hidden" style={{ background: 'var(--md-surface-container-lowest)', border: '1px solid var(--md-outline-variant)', borderRadius: 'var(--shape-sm)' }}>
-          <div className="flex justify-between space-y-3 p-4 gap-2 items-center" style={{ borderBottom: '1px solid var(--md-outline-variant)' }}>
-            <label className="flex flex-1 min-h-12 items-center gap-3 px-3" style={{ background: 'var(--md-surface-container)', border: '1px solid var(--md-outline-variant)', borderRadius: 'var(--shape-sm)', color: 'var(--md-on-surface-variant)' }}>
+          <div className="flex justify-between space-y-3 px-4 pt-2 gap-2 items-center" style={{ borderBottom: '1px solid var(--md-outline-variant)' }}>
+            <label className="flex py-2 items-center gap-3 px-3 " style={{ background: 'var(--md-surface-container)', border: '1px solid var(--md-outline-variant)', borderRadius: 'var(--shape-sm)', color: 'var(--md-on-surface-variant)' }}>
               <Search size={18} />
               <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search users, roles, locations" className="min-w-0 flex-1 bg-transparent text-sm outline-none" style={{ color: 'var(--md-on-surface)' }} />
             </label>
 
-            <div className="flex items-center gap-2 overflow-x-auto pb-1">
-              <span className="hidden shrink-0 items-center gap-1 text-xs font-medium sm:inline-flex" style={{ color: 'var(--md-outline)' }}>
-                <SlidersHorizontal size={14} />
-                Filter
-              </span>
-              {filters.map((item) => (
-                <button
-                  key={item.value}
-                  type="button"
-                  onClick={() => setFilter(item.value)}
-                  className="md-chip shrink-0"
-                  style={filter === item.value ? { background: 'var(--md-primary-container)', borderColor: 'var(--md-primary-container)', color: 'var(--md-on-primary-container)' } : undefined}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
+            <Select value={filter} onValueChange={(value) => setFilter(value as UserFilter)}>
+              <SelectTrigger
+                size="default"
+                className="h-12 my-auto  gap-2 border-[var(--md-outline-variant)] bg-[var(--md-surface-container)] px-3 py-4 text-[var(--md-on-surface)] shadow-none hover:bg-[var(--md-surface-container-high)]"
+              >
+                {/* <SlidersHorizontal size={16} className="shrink-0 text-[var(--md-outline)]" /> */}
+                <SelectValue placeholder="Filter status" />
+              </SelectTrigger>
+              <SelectContent align="start" position='popper' className="min-w-[9.5rem]">
+                {filters.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto p-3">
+          <div className="min-h-0 flex-1 overflow-auto">
             {filteredUsers.length === 0 ? (
-              <div className="flex min-h-64 flex-col items-center justify-center gap-2 text-center">
+              <div className="flex min-h-64 flex-col items-center justify-center gap-2 p-6 text-center">
                 <Search size={32} style={{ color: 'var(--md-outline)' }} />
                 <p className="text-sm" style={{ color: 'var(--md-on-surface-variant)' }}>No users match this view.</p>
               </div>
             ) : (
-              <ul className="space-y-2">
-                {filteredUsers.map((user) => (
-                  <li key={user.id}>
-                    <UserRow user={user} onClick={() => setSelectedId(user.id)} />
-                  </li>
-                ))}
-              </ul>
+              <UsersTable
+                users={paginatedUsers}
+                onView={(user) => setSelectedId(user.id)}
+                onEdit={(user) => setSelectedId(user.id)}
+                onDelete={(user) => window.alert(`Delete ${user.name} — wire to API when ready.`)}
+              />
             )}
           </div>
+
+          {filteredUsers.length > 0 && (
+            <UsersTablePagination
+              page={safePage}
+              pageSize={pageSize}
+              total={filteredUsers.length}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          )}
         </section>
       )}
     </main>

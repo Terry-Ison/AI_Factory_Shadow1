@@ -329,12 +329,11 @@ export function TranslatorPage() {
             </button>
           </div>
         </div>
-        {showJoinModal && (
-          <JoinDifferentModal
-            onConfirm={handleJoinDifferent}
-            onClose={() => setShowJoinModal(false)}
-          />
-        )}
+        <JoinDifferentModal
+          open={showJoinModal}
+          onOpenChange={setShowJoinModal}
+          onConfirm={handleJoinDifferent}
+        />
       </div>
     )
   }
@@ -442,12 +441,11 @@ export function TranslatorPage() {
         </div>
       </div>
 
-      {showJoinModal && (
-        <JoinDifferentModal
-          onConfirm={handleJoinDifferent}
-          onClose={() => setShowJoinModal(false)}
-        />
-      )}
+      <JoinDifferentModal
+        open={showJoinModal}
+        onOpenChange={setShowJoinModal}
+        onConfirm={handleJoinDifferent}
+      />
     </div>
   )
 }

@@ -21,7 +21,7 @@ export function AppLayout() {
       <div className="flex min-h-0 flex-1">
         <Sidebar collapsed={sidebarCollapsed} onToggleSidebar={() => setSidebarCollapsed((v) => !v)} />
         <main
-          className="flex min-h-0 flex-1 flex-col overflow-hidden"
+          className="flex min-h-0 flex-1 flex-col"
           style={{ background: 'var(--md-surface-container-low)' }}
         >
           <Outlet />

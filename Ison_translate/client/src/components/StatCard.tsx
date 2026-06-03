@@ -43,19 +43,19 @@ export function StatCard({ stat }: { stat: StatCardData }) {
   const trendUp = stat.trend.direction === 'up'
 
   return (
-    <article className="relative flex min-h-[9.5rem] flex-col overflow-hidden rounded-2xl border border-[var(--md-outline-variant)] bg-[var(--md-surface-container-lowest)] p-5 shadow-[var(--elevation-1)]">
+    <article className="relative flex flex-col overflow-hidden rounded-2xl border border-[var(--md-outline-variant)] bg-[var(--md-surface-container-lowest)] p-5 shadow-[var(--elevation-1)]">
       <div className="relative z-[1] flex items-start justify-between gap-3">
-        <p className="text-sm font-medium text-[var(--md-on-surface-variant)]">{stat.label}</p>
+        <p className="text-xs font-medium text-[var(--md-on-surface-variant)]">{stat.label}</p>
         <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${accent.iconBox}`}>
           {stat.icon}
         </span>
       </div>
 
-      <div className="relative z-[1] mt-3">
-        <p className="text-2xl font-bold tabular-nums tracking-tight text-[var(--md-on-surface)] md:text-[1.75rem] md:leading-9">
+      <div className="relative z-[1] ">
+        <p className="text-2xl font-bold tabular-nums tracking-tight text-[var(--md-on-surface)] md:text-2xl md:leading-9">
           {stat.value}
         </p>
-        <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-sm">
+        {/* <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-sm">
           <span
             className={`inline-flex items-center gap-0.5 font-semibold tabular-nums ${
               trendUp ? 'text-emerald-600' : 'text-red-500'
@@ -68,7 +68,7 @@ export function StatCard({ stat }: { stat: StatCardData }) {
           {stat.comparison ? (
             <span className="text-[var(--md-outline)]">{stat.comparison}</span>
           ) : null}
-        </div>
+        </div> */}
       </div>
     </article>
   )

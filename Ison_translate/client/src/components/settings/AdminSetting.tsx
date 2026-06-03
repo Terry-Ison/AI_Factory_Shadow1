@@ -112,34 +112,40 @@ export function AdminSetting({ user }: Props) {
       >
         <div className="grid gap-4 md:grid-cols-2">
           <Input
-            label="Provider"
+            type="text"
+            name="provider"
+            id="provider"
             value={provider}
             onChange={(e) => setProvider(e.target.value)}
 
             placeholder="e.g. openai"
-            helperText="Example: openai, azure-openai, custom"
+            // helperText="Example: openai, azure-openai, custom"
           />
           <Input
-            label="Model"
+            type="text"
+            name="model"
+            id="model"
             value={model}
             onChange={(e) => setModel(e.target.value)}
             placeholder="e.g. gpt-4o-mini-tts"
-            helperText="The voice model identifier used for synthesis."
+            // helperText="The voice model identifier used for synthesis."
           />
           <Input
-            label="Base URL (optional)"
+            type="text"
+            name="baseUrl"
+            id="baseUrl"
             value={baseUrl}
             onChange={(e) => setBaseUrl(e.target.value)}
             placeholder="https://api.example.com"
-            helperText="Leave empty to use default backend configuration."
+            // helperText="Leave empty to use default backend configuration."
           />
           <Input
-            label="API key (optional)"
+            type="password"
+            name="apiKey"
+            id="apiKey"
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
             placeholder="sk-..."
-            type="password"
-            helperText={apiKey.trim() ? null : 'If empty, voice generation may fail in production.'}
           />
         </div>
 
@@ -152,17 +158,13 @@ export function AdminSetting({ user }: Props) {
           </div>
         )}
 
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--md-on-surface-variant)' }}>
-            <ShieldCheck size={14} />
-            Changes are stored locally for now (per browser).
-          </div>
+        <div className="mt-5 flex flex-wrap items-center justify-end gap-3">
+         
           <Button
-            variant="filled"
+            variant="default"
             onClick={save}
             disabled={!canSave}
-            loading={saveState === 'saving'}
-            leftIcon={<Save size={16} />}
+            size="lg"
           >
             {saveState === 'saved' ? 'Saved' : 'Save admin settings'}
           </Button>

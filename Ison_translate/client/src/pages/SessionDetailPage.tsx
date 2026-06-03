@@ -2,6 +2,7 @@ import {
   ArrowLeft,
   CalendarDays,
   Check,
+  ChevronDown,
   Copy,
   FileAudio,
   Languages,
@@ -73,15 +74,17 @@ function Panel({
   icon: Icon,
   children,
   className = '',
+  headerRight,
 }: {
   title: string
   icon: typeof Users
   children: React.ReactNode
   className?: string
+  headerRight?: React.ReactNode
 }) {
   return (
     <section
-      className={`flex min-h-0 flex-col overflow-hidden ${className}`}
+      className={`flex min-h-0 flex-col ${className}`}
       style={{
         background: 'var(--md-surface-container-lowest)',
         border: '1px solid var(--md-outline-variant)',
@@ -89,16 +92,127 @@ function Panel({
       }}
     >
       <header
-        className="flex shrink-0 items-center gap-2 px-4 py-3"
+        className="flex shrink-0 items-center justify-between gap-2 px-4 py-3"
         style={{
           borderBottom: '1px solid var(--md-outline-variant)',
           color: 'var(--md-on-surface)',
         }}
       >
-        <Icon size={17} style={{ color: 'var(--md-primary)' }} />
-        <h2 className="text-sm font-medium leading-5">{title}</h2>
+        <div className="flex min-w-0 items-center gap-2">
+          <Icon size={17} style={{ color: 'var(--md-primary)' }} />
+          <h2 className="text-sm font-medium leading-5">{title}</h2>
+        </div>
+        {headerRight}
       </header>
       {children}
+    </section>
+  )
+}
+
+function AudioRecordingsPanel({
+  recordings,
+  participantByDbId,
+  token,
+}: {
+  recordings: HistorySessionDetail['recordings']
+  participantByDbId: Map<string, string>
+  token: string | null
+}) {
+  const [open, setOpen] = useState(true)
+
+  return (
+    <section
+      className="shrink-0"
+      style={{
+        background: 'var(--md-surface-container-lowest)',
+        border: '1px solid var(--md-outline-variant)',
+        borderRadius: 'var(--shape-sm)',
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-[var(--md-surface-container)]/50"
+        aria-expanded={open}
+      >
+        <div className="flex items-center gap-2">
+          <FileAudio size={17} style={{ color: 'var(--md-primary)' }} />
+          <h2 className="text-sm font-medium leading-5" style={{ color: 'var(--md-on-surface)' }}>
+            Audio recordings
+          </h2>
+          <span
+            className="rounded-full px-2 py-0.5 text-xs font-medium tabular-nums"
+            style={{ background: 'var(--md-secondary-container)', color: 'var(--md-on-secondary-container)' }}
+          >
+            {recordings.length}
+          </span>
+        </div>
+        <ChevronDown
+          size={18}
+          className="shrink-0 text-[var(--md-outline)] transition-transform duration-200"
+          style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
+        />
+      </button>
+
+      {open && (
+        <div
+          className="border-t border-[var(--md-outline-variant)] p-4"
+          style={{ borderColor: 'var(--md-outline-variant)' }}
+        >
+          {recordings.length === 0 ? (
+            <div className="flex min-h-24 flex-col items-center justify-center gap-2 text-center">
+              <Mic size={28} style={{ color: 'var(--md-outline)' }} />
+              <p className="text-sm" style={{ color: 'var(--md-on-surface-variant)' }}>
+                No audio was saved for this session.
+              </p>
+            </div>
+          ) : (
+            <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {recordings.map((r) => {
+                const owner = r.participantId ? participantByDbId.get(r.participantId) : undefined
+                const label = recordingLabel(r.kind, owner)
+                const length =
+                  r.durationMs && r.durationMs > 0
+                    ? formatDurationMs(r.durationMs)
+                    : r.finalizedAt
+                      ? 'Ready to play'
+                      : 'Still processing'
+
+                return (
+                  <li
+                    key={r.id}
+                    className="flex flex-col p-3"
+                    style={{
+                      background: 'var(--md-surface-container)',
+                      border: '1px solid var(--md-outline-variant)',
+                      borderRadius: 'var(--shape-sm)',
+                    }}
+                  >
+                    <div className="mb-3 flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium leading-5" style={{ color: 'var(--md-on-surface)' }}>
+                          {label}
+                        </p>
+                        <p className="text-xs leading-4" style={{ color: 'var(--md-on-surface-variant)' }}>
+                          {length}
+                        </p>
+                      </div>
+                      <FileAudio size={17} className="shrink-0" style={{ color: 'var(--md-primary)' }} />
+                    </div>
+                    {r.finalizedAt ? (
+                      <AuthenticatedAudio src={r.audioUrl} token={token} className="mt-auto w-full" />
+                    ) : (
+                      <p className="text-xs" style={{ color: '#f59e0b' }}>
+                        This recording is still being saved.
+                      </p>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </div>
+      )}
     </section>
   )
 }
@@ -216,12 +330,8 @@ export function SessionDetailPage() {
       </button>
 
       <header
-        className="shrink-0 p-5 md:p-6"
-        style={{
-          background: 'var(--md-surface-container-lowest)',
-          border: '1px solid var(--md-outline-variant)',
-          borderRadius: 'var(--shape-sm)',
-        }}
+        className="shrink-0"
+     
       >
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0 max-w-3xl">
@@ -278,8 +388,9 @@ export function SessionDetailPage() {
         </div>
       </header>
 
-      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[0.82fr_1.18fr]">
-        <div className="flex min-h-0 flex-col gap-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1">
+        <div className="grid min-h-0 shrink-0 gap-4 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
+        <div className="flex flex-col gap-4">
           <Panel title="Participants" icon={Users} className="shrink-0">
             <ul>
               {detail.participants.map((p, idx) => {
@@ -345,67 +456,10 @@ export function SessionDetailPage() {
               </div>
             </div>
           </Panel>
-
-          <Panel title="Audio recordings" icon={FileAudio} className="min-h-0 flex-1">
-            <div className="min-h-0 flex-1 overflow-y-auto p-4">
-              {detail.recordings.length === 0 ? (
-                <div className="flex min-h-40 flex-col items-center justify-center gap-2 text-center">
-                  <Mic size={30} style={{ color: 'var(--md-outline)' }} />
-                  <p className="text-sm" style={{ color: 'var(--md-on-surface-variant)' }}>
-                    No audio was saved for this session.
-                  </p>
-                </div>
-              ) : (
-                <ul className="space-y-3">
-                  {detail.recordings.map((r) => {
-                    const owner = r.participantId ? participantByDbId.get(r.participantId) : undefined
-                    const label = recordingLabel(r.kind, owner)
-                    const length =
-                      r.durationMs && r.durationMs > 0
-                        ? formatDurationMs(r.durationMs)
-                        : r.finalizedAt
-                          ? 'Ready to play'
-                          : 'Still processing'
-
-                    return (
-                      <li
-                        key={r.id}
-                        className="p-3"
-                        style={{
-                          background: 'var(--md-surface-container)',
-                          border: '1px solid var(--md-outline-variant)',
-                          borderRadius: 'var(--shape-sm)',
-                        }}
-                      >
-                        <div className="mb-3 flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-medium leading-5" style={{ color: 'var(--md-on-surface)' }}>
-                              {label}
-                            </p>
-                            <p className="text-xs leading-4" style={{ color: 'var(--md-on-surface-variant)' }}>
-                              {length}
-                            </p>
-                          </div>
-                          <FileAudio size={17} style={{ color: 'var(--md-primary)' }} />
-                        </div>
-                        {r.finalizedAt ? (
-                          <AuthenticatedAudio src={r.audioUrl} token={token} className="w-full" />
-                        ) : (
-                          <p className="text-xs" style={{ color: '#f59e0b' }}>
-                            This recording is still being saved.
-                          </p>
-                        )}
-                      </li>
-                    )
-                  })}
-                </ul>
-              )}
-            </div>
-          </Panel>
         </div>
 
-        <Panel title="Transcript" icon={MessageSquare} className="min-h-0">
-          <div className="min-h-0 flex-1 overflow-y-auto p-4">
+        <Panel title="Transcript" icon={MessageSquare} className="min-h-[min(28rem,50vh)] lg:min-h-[min(32rem,60vh)]">
+          <div className="max-h-[min(32rem,60vh)] min-h-0 overflow-y-auto p-4">
             {sourceMessages.length === 0 ? (
               <div className="flex min-h-80 flex-col items-center justify-center gap-2 text-center">
                 <MessageSquare size={34} style={{ color: 'var(--md-outline)' }} />
@@ -459,6 +513,13 @@ export function SessionDetailPage() {
             )}
           </div>
         </Panel>
+        </div>
+
+        <AudioRecordingsPanel
+          recordings={detail.recordings}
+          participantByDbId={participantByDbId}
+          token={token}
+        />
       </div>
     </main>
   )

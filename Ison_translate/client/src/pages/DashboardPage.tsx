@@ -17,20 +17,17 @@ function CardShell({
 }) {
   return (
     <article
-      className="min-h-0 overflow-hidden"
+      className="min-h-0 overflow-hidden rounded-xl"
       style={{
         background: 'var(--md-surface-container-lowest)',
         border: '1px solid var(--md-outline-variant)',
-        borderRadius: 'var(--shape-sm)',
       }}
     >
       <header className="flex items-start justify-between gap-3 px-4 py-3 md:px-5" style={{ borderBottom: '1px solid var(--md-outline-variant)' }}>
         <div className="flex min-w-0 items-start gap-2">
-          <span className="mt-0.5" style={{ color: 'var(--md-primary)' }}>
-            {icon}
-          </span>
+          
           <div className="min-w-0">
-            <h2 className="truncate text-sm font-medium leading-5" style={{ color: 'var(--md-on-surface)' }}>
+            <h2 className="truncate text-md font-medium leading-5" style={{ color: 'var(--md-on-surface)' }}>
               {title}
             </h2>
             {subtitle ? (
@@ -51,7 +48,7 @@ function ProgressRow({ label, valueLabel, percent }: { label: string; valueLabel
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between gap-3">
-        <span className="truncate text-sm" style={{ color: 'var(--md-on-surface)' }}>
+        <span className="truncate text-sm " style={{ color: 'var(--md-on-surface)' }}>
           {label}
         </span>
         <span className="shrink-0 text-xs tabular-nums" style={{ color: 'var(--md-outline)' }}>
@@ -60,10 +57,10 @@ function ProgressRow({ label, valueLabel, percent }: { label: string; valueLabel
       </div>
       <div className="h-2 overflow-hidden rounded-full" style={{ background: 'var(--md-surface-container)' }}>
         <div
-          className="h-full rounded-full"
+          className="h-full rounded-full bg-[#009689]"
           style={{
             width: `${Math.max(0, Math.min(100, percent))}%`,
-            background: 'var(--md-primary)',
+            // background: 'var(--md-primary)',
           }}
         />
       </div>
@@ -118,6 +115,12 @@ export function DashboardPage() {
     { label: 'English → Spanish', percent: 15 },
     { label: 'Others', percent: 15 },
   ]
+  const mostUsedLanguages = [
+    { label: 'English', percent: 45 },
+    { label: 'Hindi', percent: 25 },
+    { label: 'Spanish', percent: 15 },
+    { label: 'Others', percent: 15 },
+  ]
 
   return (
     <main className="mx-auto flex h-full min-h-0 w-full max-w-7xl flex-col gap-5 overflow-y-auto p-4 md:p-6">
@@ -138,7 +141,7 @@ export function DashboardPage() {
         </div>
       </header>
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
         {stats.map((stat) => (
           <StatCard key={stat.label} stat={stat} />
         ))}
@@ -153,17 +156,18 @@ export function DashboardPage() {
               ))}
             </div>
           </CardShell>
-        </div>
-      </section>
-
-      <section className="grid shrink-0 gap-4 lg:grid-cols-3">
-        <CardShell title="Most Used Languages" subtitle="Share of total usage" icon={<Languages size={18} />}>
+          <CardShell title="Most Used Languages" subtitle="Share of total usage" icon={<Languages size={18} />}>
           <div className="space-y-3">
-            {languageMix.map((item) => (
+            {mostUsedLanguages?.map((item) => (
               <ProgressRow key={item.label} label={item.label} valueLabel={`${item.percent}%`} percent={item.percent} />
             ))}
           </div>
         </CardShell>
+        </div>
+      </section>
+
+      <section className="grid shrink-0 gap-4 lg:grid-cols-3">
+        
       </section>
     </main>
   )
