@@ -11,7 +11,6 @@ import {
   Mail,
   MapPin,
   MessageSquare,
-  MoreHorizontal,
   Search,
   Send,
   ShieldCheck,
@@ -176,35 +175,32 @@ function statusStyles(status: UserStatus) {
 function StatCard({ icon, label, value, subtext }: { icon: ReactNode; label: string; value: string | number; subtext: string }) {
   return (
     <div
-      className="p-3"
+      title={subtext ? `${label} — ${subtext}` : label}
+      className="flex min-w-0 items-center gap-2 px-2 py-1.5"
       style={{
-        background: 'var(--md-surface-container-lowest)',
+        background: 'var(--md-surface-container)',
         border: '1px solid var(--md-outline-variant)',
         borderRadius: 'var(--shape-sm)',
       }}
     >
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <span
-          className="flex h-8 w-8 items-center justify-center"
-          style={{
-            background: 'var(--md-secondary-container)',
-            borderRadius: 'var(--shape-full)',
-            color: 'var(--md-on-secondary-container)',
-          }}
-        >
-          {icon}
-        </span>
-        <MoreHorizontal size={18} style={{ color: 'var(--md-outline)' }} />
+      <span
+        className="flex h-7 w-7 shrink-0 items-center justify-center [&_svg]:h-[0.875rem] [&_svg]:w-[0.875rem]"
+        style={{
+          background: 'var(--md-secondary-container)',
+          borderRadius: 'var(--shape-full)',
+          color: 'var(--md-on-secondary-container)',
+        }}
+      >
+        {icon}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-base font-semibold leading-5 tabular-nums" style={{ color: 'var(--md-on-surface)' }}>
+          {value}
+        </p>
+        <p className="truncate text-[0.6875rem] leading-4" style={{ color: 'var(--md-on-surface-variant)' }}>
+          {label}
+        </p>
       </div>
-      <p className="text-xl leading-7" style={{ color: 'var(--md-on-surface)' }}>
-        {value}
-      </p>
-      <p className="text-sm font-medium leading-5" style={{ color: 'var(--md-on-surface-variant)' }}>
-        {label}
-      </p>
-      <p className="mt-0.5 text-xs leading-4" style={{ color: 'var(--md-outline)' }}>
-        {subtext}
-      </p>
     </div>
   )
 }
@@ -384,11 +380,11 @@ function UserDetailView({ user, onBack }: { user: AdminUser; onBack: () => void 
         </div>
       </article>
 
-      <div className="grid shrink-0 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard icon={<MessageSquare size={18} />} label="Transcripts" value={user.transcripts} subtext="Saved session text" />
-        <StatCard icon={<FileAudio size={18} />} label="Recordings" value={user.recordings} subtext="Audio files saved" />
-        <StatCard icon={<Languages size={18} />} label="Language pair" value={`${user.sourceLang} -> ${user.targetLang}`} subtext="Default preference" />
-        <StatCard icon={<Clock size={18} />} label="Last seen" value={user.lastSeen} subtext={`Joined ${user.joinedAt}`} />
+      <div className="grid shrink-0 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard icon={<MessageSquare size={14} />} label="Transcripts" value={user.transcripts} subtext="Saved session text" />
+        <StatCard icon={<FileAudio size={14} />} label="Recordings" value={user.recordings} subtext="Audio files saved" />
+        <StatCard icon={<Languages size={14} />} label="Language pair" value={`${user.sourceLang} → ${user.targetLang}`} subtext="Default preference" />
+        <StatCard icon={<Clock size={14} />} label="Last seen" value={user.lastSeen} subtext={`Joined ${user.joinedAt}`} />
       </div>
 
       <div className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[1fr_23rem]">
@@ -500,11 +496,11 @@ export function UserManagementPage() {
               <UserPlus size={17} />
               Invite user
             </button>
-            <div className="grid min-w-0 gap-3 grid-cols-2 md:grid-cols-4 xl:w-[42rem] xl:grid-cols-4">
-              <StatCard icon={<Users size={18} />} label="Total users" value={users.length} subtext="Registered accounts" />
-              <StatCard icon={<UserCheck size={18} />} label="Active" value={activeCount} subtext="Recently healthy" />
-              <StatCard icon={<AlertTriangle size={18} />} label="Review" value={reviewCount} subtext="Needs admin check" />
-              <StatCard icon={<Ban size={18} />} label="Suspended" value={suspendedCount} subtext="Restricted access" />
+            <div className="grid min-w-0 gap-2 sm:grid-cols-2 xl:w-auto xl:grid-cols-4">
+              <StatCard icon={<Users size={14} />} label="Total users" value={users.length} subtext="Registered accounts" />
+              <StatCard icon={<UserCheck size={14} />} label="Active" value={activeCount} subtext="Recently healthy" />
+              <StatCard icon={<AlertTriangle size={14} />} label="Review" value={reviewCount} subtext="Needs admin check" />
+              <StatCard icon={<Ban size={14} />} label="Suspended" value={suspendedCount} subtext="Restricted access" />
             </div>
           </div>
         </div>
@@ -514,8 +510,8 @@ export function UserManagementPage() {
         <UserDetailView user={selectedUser} onBack={() => setSelectedId(null)} />
       ) : (
         <section className="flex min-h-0 flex-1 flex-col overflow-hidden" style={{ background: 'var(--md-surface-container-lowest)', border: '1px solid var(--md-outline-variant)', borderRadius: 'var(--shape-sm)' }}>
-          <div className="shrink-0 space-y-3 p-4" style={{ borderBottom: '1px solid var(--md-outline-variant)' }}>
-            <label className="flex min-h-12 items-center gap-3 px-3" style={{ background: 'var(--md-surface-container)', border: '1px solid var(--md-outline-variant)', borderRadius: 'var(--shape-sm)', color: 'var(--md-on-surface-variant)' }}>
+          <div className="flex justify-between space-y-3 p-4 gap-2 items-center" style={{ borderBottom: '1px solid var(--md-outline-variant)' }}>
+            <label className="flex flex-1 min-h-12 items-center gap-3 px-3" style={{ background: 'var(--md-surface-container)', border: '1px solid var(--md-outline-variant)', borderRadius: 'var(--shape-sm)', color: 'var(--md-on-surface-variant)' }}>
               <Search size={18} />
               <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search users, roles, locations" className="min-w-0 flex-1 bg-transparent text-sm outline-none" style={{ color: 'var(--md-on-surface)' }} />
             </label>

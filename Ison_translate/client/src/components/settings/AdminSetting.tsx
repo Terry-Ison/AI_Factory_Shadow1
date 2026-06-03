@@ -114,28 +114,29 @@ export function AdminSetting({ user }: Props) {
           <Input
             label="Provider"
             value={provider}
-            onChange={setProvider}
+            onChange={(e) => setProvider(e.target.value)}
+
             placeholder="e.g. openai"
             helperText="Example: openai, azure-openai, custom"
           />
           <Input
             label="Model"
             value={model}
-            onChange={setModel}
+            onChange={(e) => setModel(e.target.value)}
             placeholder="e.g. gpt-4o-mini-tts"
             helperText="The voice model identifier used for synthesis."
           />
           <Input
             label="Base URL (optional)"
             value={baseUrl}
-            onChange={setBaseUrl}
+            onChange={(e) => setBaseUrl(e.target.value)}
             placeholder="https://api.example.com"
             helperText="Leave empty to use default backend configuration."
           />
           <Input
             label="API key (optional)"
             value={apiKey}
-            onChange={setApiKey}
+            onChange={(e) => setApiKey(e.target.value)}
             placeholder="sk-..."
             type="password"
             helperText={apiKey.trim() ? null : 'If empty, voice generation may fail in production.'}

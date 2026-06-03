@@ -17,10 +17,9 @@ export function AppLayout() {
       className="flex h-full min-h-0 flex-col"
       style={{ background: 'var(--md-surface)' }}
     >
-      <Navbar onToggleSidebar={() => setSidebarCollapsed((v) => !v)} />
+      <Navbar/>
       <div className="flex min-h-0 flex-1">
-        <Sidebar collapsed={sidebarCollapsed} />
-        {/* M3 surface-container-low for the main content area */}
+        <Sidebar collapsed={sidebarCollapsed} onToggleSidebar={() => setSidebarCollapsed((v) => !v)} />
         <main
           className="flex min-h-0 flex-1 flex-col overflow-hidden"
           style={{ background: 'var(--md-surface-container-low)' }}

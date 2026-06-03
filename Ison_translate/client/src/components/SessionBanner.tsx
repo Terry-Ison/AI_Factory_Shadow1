@@ -233,7 +233,7 @@ export function SessionBanner({
                     </>
                   ) : (
                     <span style={{ color: 'var(--md-outline)' }}>
-                      {' '}· Partner language resolves on join
+                      {/* {' '}· Partner language resolves on join */}
                     </span>
                   )}
                 </p>
@@ -270,7 +270,7 @@ export function SessionBanner({
                 {muted ? 'Unmute' : 'Mute'}
               </button>
 
-              <Button variant="outlined" size="sm" onClick={onJoinDifferent} leftIcon={<LogIn size={14} />}>
+              <Button variant="outline" size="sm" onClick={onJoinDifferent} leftIcon={<LogIn size={14} />}>
                 Join different session
               </Button>
 
@@ -279,7 +279,7 @@ export function SessionBanner({
               </Button>
 
               <Button
-                variant="outlined"
+                variant="outline"
                 size="sm"
                 onClick={() => {
                   setInviteError(null)
@@ -381,7 +381,7 @@ export function SessionBanner({
             </div>
 
             <div className="flex flex-wrap justify-end gap-2 px-5 py-4" style={{ borderTop: '1px solid var(--md-outline-variant)' }}>
-              <Button variant="text" onClick={() => setInviteOpen(false)} disabled={inviteSending}>
+              <Button variant="ghost" onClick={() => setInviteOpen(false)} disabled={inviteSending}>
                 Cancel
               </Button>
               <Button

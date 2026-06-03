@@ -1,16 +1,10 @@
-import { Menu, Moon, Sun } from 'lucide-react'
+import { Moon, Sun } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useTheme } from '../context/ThemeContext'
+import logo from '../assets/images/logo.jpg'
 
-type Props = {
-  onToggleSidebar: () => void
-}
 
-/**
- * M3 Top App Bar — Small variant.
- * Starts at elevation-0 (flush with surface), elevates to elevation-2 on scroll.
- */
-export function Navbar({ onToggleSidebar }: Props) {
+export function Navbar() {
   const { theme, toggleTheme } = useTheme()
   const [scrolled, setScrolled] = useState(false)
   const mainRef = useRef<Element | null>(null)
@@ -40,28 +34,20 @@ export function Navbar({ onToggleSidebar }: Props) {
         top: 0,
       }}
     >
-      {/* Navigation icon */}
-      <button
-        className="md-icon-btn"
-        onClick={onToggleSidebar}
-        title="Toggle sidebar"
-        aria-label="Open navigation menu"
-        style={{ color: 'var(--md-on-surface-variant)' }}
-      >
-        <Menu size={24} />
-      </button>
-
+     
       {/* M3 headline: Title Large */}
       <span
         className="font-display flex-1 select-none pl-1 font-semibold "
         style={{
           fontSize: '1.375rem',
-          // fontWeight: 400,
           lineHeight: '1.75rem',
           color: 'var(--md-on-surface)',
         }}
       >
-        Transly
+        <div className="flex items-center gap-2 ">
+          <img src={logo} alt="logo" className="w-8 h-8 rounded-md" />
+          <span className="text-2xl font-semibold">Transly</span>
+        </div>
       </span>
 
       {/* Theme toggle */}

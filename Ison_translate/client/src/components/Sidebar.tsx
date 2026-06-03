@@ -1,12 +1,15 @@
-import { History, LayoutDashboard, LogOut, Mic, Settings, User, Users } from 'lucide-react'
+import { ChevronLeft, ChevronRight, History, LayoutDashboard, LogOut, Menu, Mic, Settings, User, Users } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { Popover, PopoverContent, PopoverTrigger } from './ui/Popover'
+import { Button } from './ui/Button'
 
 type Props = {
   collapsed: boolean
+  onToggleSidebar: () => void
 }
 
-export function Sidebar({ collapsed }: Props) {
+export function Sidebar({ collapsed, onToggleSidebar }: Props) {
   const { user, isGuest, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -20,7 +23,7 @@ export function Sidebar({ collapsed }: Props) {
 
   return (
     <aside
-      className="flex shrink-0 flex-col py-2"
+      className="flex shrink-0 flex-col"
       style={{
         width: collapsed ? '4.5rem' : '15rem',
         transition: 'width 250ms cubic-bezier(0.2, 0, 0, 1)',
@@ -29,6 +32,9 @@ export function Sidebar({ collapsed }: Props) {
         overflow: 'hidden',
       }}
     >
+      <button onClick={onToggleSidebar} className={`absolute ${!collapsed ? 'left-56' : 'left-14'} top-18 z-10 bg-white rounded-full shadow-md bg-gray-400 p-1 cursor-pointer hover:bg-gray-100`}>
+        {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+      </button>
       <nav className="flex flex-1 flex-col gap-0.5 px-2 py-2">
         {!isGuest && user && (
 
@@ -79,41 +85,67 @@ export function Sidebar({ collapsed }: Props) {
       </nav>
 
       {/* User section */}
+      {user && (
+        <>
+          <Popover>
+            <PopoverTrigger>
+              <div
+                className="mb-1 flex items-center gap-3 rounded-xl px-3 py-3 cursor-pointer border-t-1 border-gray-200"
+                style={{ borderRadius: 'var(--shape-lg)' }}
+              >
+                <div
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+                  style={{
+                    background: 'var(--md-primary-container)',
+                    color: 'var(--md-on-primary-container)',
+                    borderRadius: 'var(--shape-full)',
+                  }}
+                >
+                  {user.displayName.charAt(0).toUpperCase()}
+                </div>
+                {!collapsed && (
+                  <div className="min-w-0">
+                    <p
+                      className="truncate text-sm font-medium text-start"
+                      style={{ color: 'var(--md-on-surface)' }}
+                    >
+                      {user.displayName}
+                    </p>
+                    <p
+                      className="truncate text-xs"
+                      style={{ color: 'var(--md-on-surface-variant)' }}
+                    >
+                      {user.email}
+                    </p>
+                  </div>
+
+                )}
+
+                {!collapsed && (
+                  <LogOut size={20} className='text-gray-700 ml-2 ' />
+                )}
+              </div>
+            </PopoverTrigger>
+            <PopoverContent align="end" side='top' className="w-44">
+              <Button variant="ghost" size="sm" className="w-full justify-start cursor-pointer" onClick={handleLogout}>
+                <LogOut size={16} className='text-gray-700' />
+                <span className="text-sm">Sign out</span>
+              </Button>
+              {/* <Button variant="ghost" size="sm" className="w-full justify-start cursor-pointer">
+                <Settings size={16} className='text-gray-700' />
+                <span className="text-sm">Settings</span>
+              </Button> */}
+            </PopoverContent>
+          </Popover>
+
+        </>
+      )}
+
       <div
-        className="px-2 pb-2"
+        className="px-2"
         style={{ borderTop: '1px solid var(--md-outline-variant)' }}
       >
-        {user && !collapsed && (
-          <div
-            className="mb-1 flex items-center gap-3 rounded-xl px-3 py-3"
-            style={{ borderRadius: 'var(--shape-lg)' }}
-          >
-            <div
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold"
-              style={{
-                background: 'var(--md-primary-container)',
-                color: 'var(--md-on-primary-container)',
-                borderRadius: 'var(--shape-full)',
-              }}
-            >
-              {user.displayName.charAt(0).toUpperCase()}
-            </div>
-            <div className="min-w-0">
-              <p
-                className="truncate text-sm font-medium"
-                style={{ color: 'var(--md-on-surface)' }}
-              >
-                {user.displayName}
-              </p>
-              <p
-                className="truncate text-xs"
-                style={{ color: 'var(--md-on-surface-variant)' }}
-              >
-                {user.email}
-              </p>
-            </div>
-          </div>
-        )}
+
         {isGuest && !collapsed && (
           <div className="mb-1 flex items-center gap-3 px-3 py-3">
             <User size={20} style={{ color: 'var(--md-on-surface-variant)' }} />
@@ -125,13 +157,7 @@ export function Sidebar({ collapsed }: Props) {
             </span>
           </div>
         )}
-        <NavItem
-          icon={<LogOut size={20} />}
-          label="Sign out"
-          collapsed={collapsed}
-          active={false}
-          onClick={handleLogout}
-        />
+
       </div>
     </aside>
   )
@@ -151,12 +177,11 @@ function NavItem({ icon, label, collapsed, active, onClick }: NavItemProps) {
       onClick={onClick}
       title={collapsed ? label : undefined}
       aria-label={label}
-      className="flex w-full items-center gap-3 text-sm font-medium"
+      className="flex w-full items-center gap-3 text-sm font-medium rounded-lg justify-start"
       style={{
-        height: '3.5rem',
-        padding: collapsed ? '0' : '0 1rem',
+        height: '2.3rem',
+        padding: collapsed ? '0' : '12px',
         justifyContent: collapsed ? 'center' : 'flex-start',
-        borderRadius: 'var(--shape-full)',
         background: active
           ? 'var(--md-secondary-container)'
           : 'transparent',
@@ -184,11 +209,11 @@ function NavItem({ icon, label, collapsed, active, onClick }: NavItemProps) {
         }}
         className="nav-state-layer"
       />
-      <span className="relative z-10 flex shrink-0 items-center justify-center" style={{ width: '1.5rem' }}>
+      <span className="relative z-10 flex shrink-0 items-center justify-center w-5 h-4">
         {icon}
       </span>
       {!collapsed && (
-        <span className="relative z-10 truncate">{label}</span>
+        <span className={`relative z-10 truncate ${collapsed ? 'text-base' : 'text-normal'}`}>{label}</span>
       )}
     </button>
   )
