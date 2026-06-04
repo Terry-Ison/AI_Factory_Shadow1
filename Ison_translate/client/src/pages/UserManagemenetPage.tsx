@@ -314,9 +314,9 @@ function StatCard({ icon, label, value, subtext }: { icon: ReactNode; label: str
   return (
     <div
       title={subtext ? `${label} — ${subtext}` : label}
-      className="flex min-w-0 items-center gap-2 px-2 py-1.5"
+      className="flex min-w-0 items-center gap-2 px-2 py-1.5 bg-accent"
       style={{
-        background: 'var(--md-surface-container)',
+        background: 'var(--acc)',
         border: '1px solid var(--md-outline-variant)',
         borderRadius: 'var(--shape-sm)',
       }}
@@ -884,7 +884,7 @@ export function UserManagementPage() {
       ) : (
         <section className="flex min-h-0 flex-1 flex-col overflow-hidden" style={{ background: 'var(--md-surface-container-lowest)', border: '1px solid var(--md-outline-variant)', borderRadius: 'var(--shape-sm)' }}>
           <div className="flex justify-between space-y-3 px-4 py-2 gap-2 items-center" style={{ borderBottom: '1px solid var(--md-outline-variant)' }}>
-            <label className="flex py-2 items-center gap-3 px-3 my-auto" style={{  border: '1px solid var(--md-outline-variant)', borderRadius: 'var(--shape-sm)', color: 'var(--md-on-surface-variant)' }}>
+            <label className="flex py-2 items-center gap-3 px-3 my-auto" style={{ background: 'var(--md-surface-container)', border: '1px solid var(--md-outline-variant)', borderRadius: 'var(--shape-sm)', color: 'var(--md-on-surface-variant)' }}>
               <Search size={18} />
               <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search users, roles, locations" className="min-w-0 flex-1 bg-transparent text-sm outline-none" />
             </label>

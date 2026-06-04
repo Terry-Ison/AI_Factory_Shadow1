@@ -103,9 +103,9 @@ export function SessionBanner({
 
   return (
     <div
-      className="shrink-0"
+      className="shrink-0 bg-white"
       style={{
-        background: 'var(--md-surface-container)',
+        // background: 'var(--md-surface-container)',
         borderBottom: '1px solid var(--md-outline-variant)',
       }}
     >

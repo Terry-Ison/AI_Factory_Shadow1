@@ -23,9 +23,7 @@ export function Navbar() {
     <header
       className="flex h-16 shrink-0 items-center gap-1 px-2"
       style={{
-        background: scrolled
-          ? 'var(--md-surface-container)'
-          : 'var(--md-surface)',
+      
         boxShadow: scrolled ? 'var(--elevation-2)' : 'none',
         borderBottom: scrolled ? 'none' : '1px solid var(--md-outline-variant)',
         transition: 'background 200ms, box-shadow 200ms',

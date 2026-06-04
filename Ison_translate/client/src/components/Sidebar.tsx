@@ -23,11 +23,12 @@ export function Sidebar({ collapsed, onToggleSidebar }: Props) {
 
   return (
     <aside
-      className="flex shrink-0 flex-col"
+      className="flex shrink-0 flex-col bg-background"
       style={{
         width: collapsed ? '4.5rem' : '15rem',
         transition: 'width 250ms cubic-bezier(0.2, 0, 0, 1)',
-        background: 'var(--md-surface)',
+        // background: 'var(--md-surface)',
+        background: '#fffff',
         borderRight: '1px solid var(--md-outline-variant)',
         overflow: 'hidden',
       }}
@@ -183,10 +184,10 @@ function NavItem({ icon, label, collapsed, active, onClick }: NavItemProps) {
         padding: collapsed ? '0' : '12px',
         justifyContent: collapsed ? 'center' : 'flex-start',
         background: active
-          ? 'var(--md-secondary-container)'
+          ? 'var(--accent)'
           : 'transparent',
         color: active
-          ? 'var(--md-on-secondary-container)'
+          ? 'var(--accent-foreground)'
           : 'var(--md-on-surface-variant)',
         border: 'none',
         cursor: 'pointer',

@@ -9,6 +9,8 @@ import { useMicCapture } from '../hooks/useMicCapture'
 import { useWebRTC } from '../hooks/useWebRTC'
 import { useWebSocket } from '../hooks/useWebSocket'
 import type { SessionConfig, TranscriptLine, WebRtcSignalMessage } from '../types'
+import { Button } from '@/components/ui/Button'
+import { ArrowLeftRight, Plus } from 'lucide-react'
 
 const API_BASE = import.meta.env.VITE_API_URL ?? ''
 const MAX_TRANSCRIPT_CHARS = 12_000
@@ -321,12 +323,14 @@ export function TranslatorPage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-3">
-            <button onClick={startNewSession} className="md-btn md-btn-filled">
+            <Button variant="default" size='lg' onClick={startNewSession} className="">
+              <Plus size={16} />
               Start new session
-            </button>
-            <button onClick={() => setShowJoinModal(true)} className="md-btn md-btn-outlined">
+            </Button>
+            <Button variant="outline" size='lg' onClick={() => setShowJoinModal(true)} className="">
+              <ArrowLeftRight size={16} />
               Join a different session
-            </button>
+            </Button>
           </div>
         </div>
         <JoinDifferentModal
