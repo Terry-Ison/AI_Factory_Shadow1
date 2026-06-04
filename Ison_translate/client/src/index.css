@@ -498,7 +498,7 @@ select:focus-visible {
 
 .md-field-input {
   width: 100%;
-  height: 3.5rem;          /* 56px — M3 text field height */
+  height: 3rem;          /* 56px — M3 text field height */
   padding: 0 1rem;
   border-radius: var(--shape-sm);
   border: 1px solid var(--md-outline);
@@ -690,7 +690,6 @@ select option {
 .hero-feature-0 { animation: hero-reveal 0.75s 0.60s cubic-bezier(0.22,1,0.36,1) both; }
 .hero-feature-1 { animation: hero-reveal 0.75s 0.75s cubic-bezier(0.22,1,0.36,1) both; }
 .hero-feature-2 { animation: hero-reveal 0.75s 0.90s cubic-bezier(0.22,1,0.36,1) both; }
-.hero-preview   { animation: hero-reveal 0.8s  1.05s cubic-bezier(0.22,1,0.36,1) both; }
 
 /* ── Feature icon float ── */
 @keyframes icon-float {

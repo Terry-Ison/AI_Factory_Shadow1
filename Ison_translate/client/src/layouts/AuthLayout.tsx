@@ -94,7 +94,7 @@ export function AuthLayout({ children }: Props) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              height: '92px',
+              height: '72px',
               borderBottom: '1px solid rgba(255,255,255,0.07)',
               overflow: 'hidden',
             }}
@@ -120,7 +120,7 @@ export function AuthLayout({ children }: Props) {
             style={{
               flex: 1,
               overflowY: 'auto',
-              padding: '2.5rem 3rem 2rem',
+              padding: '1rem',
               scrollbarWidth: 'none',
             }}
           >
@@ -203,7 +203,7 @@ function HeroContent() {
           fontSize: '1rem',
           lineHeight: 1.65,
           color: 'rgba(255,255,255,0.60)',
-          marginBottom: '2.25rem',
+          marginBottom: '1rem',
         }}
       >
         Break language barriers in real time. Whether you're across the table or across the globe,
@@ -274,96 +274,7 @@ function HeroContent() {
           )
         })}
       </ul>
-
-      {/* Mock conversation preview — shows the product in action */}
-      <MockConversation />
     </div>
   )
 }
 
-/* ── Mock live conversation ─────────────────────────────────────── */
-function MockConversation() {
-  return (
-    <div
-      className="hero-preview"
-      style={{
-        background: 'rgba(255,255,255,0.04)',
-        border: '1px solid rgba(255,255,255,0.09)',
-        borderRadius: 'var(--shape-lg)',
-        padding: '1.125rem 1.25rem',
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
-      }}
-    >
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.875rem' }}>
-        <span
-          style={{
-            width: '7px',
-            height: '7px',
-            borderRadius: '9999px',
-            background: '#22c55e',
-            boxShadow: '0 0 8px rgba(34,197,94,0.7)',
-            flexShrink: 0,
-          }}
-        />
-        <span
-          style={{
-            fontSize: '0.6875rem',
-            fontWeight: 500,
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
-            color: 'rgba(255,255,255,0.38)',
-          }}
-        >
-          Live session preview
-        </span>
-      </div>
-
-      {/* Bubbles */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-        {/* Outgoing */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-          <span style={{ fontSize: '0.6875rem', color: 'rgba(190,194,255,0.65)', paddingLeft: '0.25rem' }}>
-            You · English
-          </span>
-          <div
-            style={{
-              alignSelf: 'flex-start',
-              background: 'rgba(81,86,181,0.35)',
-              border: '1px solid rgba(190,194,255,0.2)',
-              borderRadius: '14px 14px 14px 4px',
-              padding: '0.55rem 0.875rem',
-              maxWidth: '90%',
-            }}
-          >
-            <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.92)', lineHeight: 1.4 }}>
-              Good morning! Can we start the meeting now?
-            </p>
-          </div>
-        </div>
-
-        {/* Incoming translated */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', alignItems: 'flex-end' }}>
-          <span style={{ fontSize: '0.6875rem', color: 'rgba(255,255,255,0.38)', paddingRight: '0.25rem' }}>
-            Partner · French
-          </span>
-          <div
-            style={{
-              alignSelf: 'flex-end',
-              background: 'rgba(255,255,255,0.07)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '14px 14px 4px 14px',
-              padding: '0.55rem 0.875rem',
-              maxWidth: '90%',
-            }}
-          >
-            <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.82)', lineHeight: 1.4 }}>
-              Bonjour ! Oui, commençons la réunion.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}

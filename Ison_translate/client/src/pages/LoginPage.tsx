@@ -19,7 +19,7 @@ const subtitleStyle: React.CSSProperties = {
   fontSize: '0.875rem',
   lineHeight: '1.375rem',
   color: 'var(--md-on-surface-variant)',
-  marginBottom: '1.75rem',
+  marginBottom: '.75rem',
 }
 
 const switchRowStyle: React.CSSProperties = {
@@ -103,7 +103,7 @@ function SignInView({
       <h2 style={headingStyle}>Sign in</h2>
       <p style={subtitleStyle}>Enter your credentials to continue.</p>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-3">
         <Field label="Email address" type="email" value={email} onChange={setEmail} autoComplete="email" />
         <Field label="Password" type="password" value={password} onChange={setPassword} autoComplete="current-password" />
         {error && <ErrorBanner>{error}</ErrorBanner>}
@@ -299,7 +299,7 @@ function Divider() {
   return (
     <div
       className="flex items-center gap-3"
-      style={{ color: 'var(--md-on-surface-variant)', fontSize: '0.75rem', margin: '2.25rem 0 1.25rem' }}
+      style={{ color: 'var(--md-on-surface-variant)', fontSize: '0.75rem', margin: '1rem 0 1.25rem' }}
     >
       <span
         style={{

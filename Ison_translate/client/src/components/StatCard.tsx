@@ -43,7 +43,7 @@ export function StatCard({ stat }: { stat: StatCardData }) {
   const trendUp = stat.trend.direction === 'up'
 
   return (
-    <article className="relative flex flex-col overflow-hidden rounded-2xl border border-[var(--md-outline-variant)] bg-[var(--md-surface-container-lowest)] p-5 shadow-[var(--elevation-1)]">
+    <article className="relative flex flex-col overflow-hidden rounded-2xl border border-[var(--md-outline-variant)] bg-[var(--md-surface-container-lowest)] p-5 ">
       <div className="relative z-[1] flex items-start justify-between gap-3">
         <p className="text-xs font-medium text-[var(--md-on-surface-variant)]">{stat.label}</p>
         <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${accent.iconBox}`}>
