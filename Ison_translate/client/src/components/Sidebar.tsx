@@ -32,7 +32,7 @@ export function Sidebar({ collapsed, onToggleSidebar }: Props) {
         overflow: 'hidden',
       }}
     >
-      <button onClick={onToggleSidebar} className={`absolute ${!collapsed ? 'left-56' : 'left-14'} top-18 z-10 bg-white rounded-full shadow-md bg-gray-400 p-1 cursor-pointer hover:bg-gray-100`}>
+      <button onClick={onToggleSidebar} className={`absolute ${!collapsed ? 'left-56' : 'left-14'} top-18 bg-white rounded-full shadow-md bg-gray-400 p-1 cursor-pointer hover:bg-gray-100`}>
         {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
       </button>
       <nav className="flex flex-1 flex-col gap-0.5 px-2 py-2 pt-6">
@@ -90,7 +90,7 @@ export function Sidebar({ collapsed, onToggleSidebar }: Props) {
           <Popover>
             <PopoverTrigger>
               <div
-                className="mb-1 flex items-center gap-3 rounded-xl px-3 py-3 cursor-pointer border-t-1 border-gray-200"
+                className="mb-1 flex items-center justify-center gap-3 rounded-xl px-3 py-3 cursor-pointer border-t-1 border-gray-200"
                 style={{ borderRadius: 'var(--shape-lg)' }}
               >
                 <div
@@ -126,7 +126,7 @@ export function Sidebar({ collapsed, onToggleSidebar }: Props) {
                 )}
               </div>
             </PopoverTrigger>
-            <PopoverContent align="end" side='top' className="w-44">
+            <PopoverContent align='end' className="w-44">
               <Button variant="ghost" size="sm" className="w-full justify-start cursor-pointer" onClick={handleLogout}>
                 <LogOut size={16} className='text-gray-700' />
                 <span className="text-sm">Sign out</span>

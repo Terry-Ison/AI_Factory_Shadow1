@@ -10,7 +10,7 @@ export function SettingPage() {
     return (
         <div className="mx-auto flex h-full min-h-0 w-full max-w-7xl flex-col gap-5 overflow-hidden p-4 md:p-6">
             {/* <UserSetting user={user}/> */}
-            <AdminSetting user={user} />
+            <AdminSetting />
         </div>
     )
 }   

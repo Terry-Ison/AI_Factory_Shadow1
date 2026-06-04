@@ -1,13 +1,19 @@
-import { ChevronDown, ChevronUp, Copy, LogIn, Mic, MicOff, MoreVertical, PhoneOff, Send, X } from 'lucide-react'
+import { ChevronDown, ChevronUp, Copy, LogIn, Mic, MicOff, PhoneOff, Send, Volume2, X } from 'lucide-react'
 import { useRef, useState } from 'react'
 import axiosInstance from '../api/axiosInstance'
 import { languageLabel } from '../config'
 import { useOnClickOutside } from '../hooks/useOnClickOutside'
 import type { SessionConfig } from '../types'
-import { Button } from './ui/Button'
-import { Input } from './ui/Input'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 type VoiceGender = 'male' | 'female'
+
+const voiceOptions: { value: VoiceGender; label: string }[] = [
+  { value: 'male', label: 'Male' },
+  { value: 'female', label: 'Female' },
+]
 
 type Props = {
   session: SessionConfig | null
@@ -46,8 +52,6 @@ export function SessionBanner({
 }: Props) {
   const [collapsed, setCollapsed] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [voiceMenuOpen, setVoiceMenuOpen] = useState(false)
-  const voiceMenuRef = useRef<HTMLDivElement | null>(null)
   const [internalVoice, setInternalVoice] = useState<VoiceGender>('female')
   const [inviteOpen, setInviteOpen] = useState(false)
   const inviteRef = useRef<HTMLDivElement | null>(null)
@@ -60,9 +64,7 @@ export function SessionBanner({
 
   const sessionId = session?.sessionId ?? ''
 
-  useOnClickOutside(voiceMenuRef, () => setVoiceMenuOpen(false), voiceMenuOpen)
   useOnClickOutside(inviteRef, () => setInviteOpen(false), inviteOpen)
-
   function copySessionId() {
     if (!sessionId) return
     navigator.clipboard.writeText(sessionId).then(() => {
@@ -71,12 +73,10 @@ export function SessionBanner({
     })
   }
 
-  function setVoiceGender(next: VoiceGender) {
+  function handleVoiceChange(next: VoiceGender) {
     setInternalVoice(next)
     onVoiceChange?.(next)
-    setVoiceMenuOpen(false)
   }
-
   async function sendInvite() {
     const email = inviteEmail.trim()
     if (!email) return
@@ -93,7 +93,7 @@ export function SessionBanner({
       const message =
         err && typeof err === 'object' && 'response' in err
           ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            ((err as any).response?.data?.message as string) ?? 'Failed to send invite'
+          ((err as any).response?.data?.message as string) ?? 'Failed to send invite'
           : 'Failed to send invite'
       setInviteError(message)
     } finally {
@@ -103,7 +103,7 @@ export function SessionBanner({
 
   return (
     <div
-      className="sticky top-0  shrink-0"
+      className="shrink-0"
       style={{
         background: 'var(--md-surface-container)',
         borderBottom: '1px solid var(--md-outline-variant)',
@@ -167,6 +167,7 @@ export function SessionBanner({
             >
               {muted ? <MicOff size={18} /> : <Mic size={18} />}
             </IconBtn>
+            <VoiceSelect activeVoice={activeVoice} onVoiceChange={handleVoiceChange} compact />
             <IconBtn title="Leave session" onClick={onLeave} danger>
               <PhoneOff size={18} />
             </IconBtn>
@@ -175,7 +176,6 @@ export function SessionBanner({
             </IconBtn>
           </div>
         )}
-
         <button
           className="md-icon-btn"
           onClick={() => setCollapsed((v) => !v)}
@@ -251,25 +251,25 @@ export function SessionBanner({
           {/* Right: action buttons */}
           {session && (
             <div className="flex flex-wrap items-center gap-2">
-              <Button variant="default" size="default" onClick={onToggleMute} >
+              <Button variant="default" size="default" onClick={onToggleMute}>
                 {muted ? <MicOff size={14} /> : <Mic size={14} />}
                 {muted ? 'Unmute' : 'Mute'}
               </Button>
 
-              <Button variant="outline" size="default" onClick={onJoinDifferent} >
+              <VoiceSelect activeVoice={activeVoice} onVoiceChange={handleVoiceChange} />
+
+              <Button variant="default" size="default" onClick={onJoinDifferent}>
                 <LogIn size={14} />
                 Join different session
               </Button>
-
-              <Button variant="destructive" size="sm" onClick={onLeave} >
+              <Button variant="destructive" size="sm" onClick={onLeave}>
                 <PhoneOff size={14} />
                 Leave
               </Button>
-
               <Button
                 variant="default"
                 size="default"
-                onClick={() => {  
+                onClick={() => {
                   setInviteError(null)
                   setInviteSuccess(null)
                   setInviteOpen(true)
@@ -278,49 +278,6 @@ export function SessionBanner({
                 <Send size={14} />
                 Invite User
               </Button>
-
-              {/* Voice menu (3-dots) */}
-              <div className="relative" ref={voiceMenuRef}>
-                <button
-                  type="button"
-                  className="md-icon-btn"
-                  title="Voice options"
-                  aria-label="Voice options"
-                  onClick={() => setVoiceMenuOpen((v) => !v)}
-                  style={{ width: '2rem', height: '2rem', color: 'var(--md-on-surface-variant)' }}
-                >
-                  <MoreVertical size={18} />
-                </button>
-
-                {voiceMenuOpen && (
-                  <div
-                    className="absolute right-0 mt-2 w-44 overflow-hidden rounded-xl border p-1 shadow-lg"
-                    style={{
-                      background: 'var(--md-surface-container-high)',
-                      borderColor: 'var(--md-outline-variant)',
-                    }}
-                    role="menu"
-                    aria-label="Voice options menu"
-                  >
-                    <div
-                      className="px-3 py-2 text-xs"
-                      style={{ color: 'var(--md-on-surface-variant)' }}
-                    >
-                      Voice
-                    </div>
-                    <MenuItem
-                      active={activeVoice === 'male'}
-                      onClick={() => setVoiceGender('male')}
-                      label="Male"
-                    />
-                    <MenuItem
-                      active={activeVoice === 'female'}
-                      onClick={() => setVoiceGender('female')}
-                      label="Female"
-                    />
-                  </div>
-                )}
-              </div>
             </div>
           )}
         </div>
@@ -356,7 +313,7 @@ export function SessionBanner({
               <Input
                 label="Email address"
                 value={inviteEmail}
-                onChange={setInviteEmail}
+                onChange={(event) => setInviteEmail(event.target.value)}
                 placeholder="name@company.com"
                 type="email"
                 autoFocus
@@ -370,15 +327,13 @@ export function SessionBanner({
             </div>
 
             <div className="flex flex-wrap justify-end gap-2 px-5 py-4" style={{ borderTop: '1px solid var(--md-outline-variant)' }}>
-              <Button variant="ghost" onClick={() => setInviteOpen(false)} disabled={inviteSending}>
+              <Button variant="outline" onClick={() => setInviteOpen(false)} disabled={inviteSending}>
                 Cancel
               </Button>
               <Button
-                variant="filled"
+                variant="default"
                 onClick={() => void sendInvite()}
                 disabled={!inviteEmail.trim()}
-                loading={inviteSending}
-                leftIcon={<Send size={16} />}
               >
                 Send invite
               </Button>
@@ -390,8 +345,41 @@ export function SessionBanner({
   )
 }
 
-function IconBtn({
-  children,
+function VoiceSelect({
+  activeVoice,
+  onVoiceChange,
+  compact = false,
+}: {
+  activeVoice: VoiceGender
+  onVoiceChange: (voice: VoiceGender) => void
+  compact?: boolean
+}) {
+  return (
+    <Select value={activeVoice} onValueChange={(value) => onVoiceChange(value as VoiceGender)}>
+      <SelectTrigger
+        size={compact ? 'sm' : 'default'}
+        aria-label="Voice"
+        className={
+          compact
+            ? 'h-8 min-w-[6.5rem] gap-1.5 border-[var(--md-outline-variant)] bg-[var(--md-surface-container)] px-2 text-[var(--md-on-surface)] shadow-none hover:bg-[var(--md-surface-container-high)]'
+            : 'min-w-[7.5rem] gap-2 border-[var(--md-outline-variant)] bg-[var(--md-surface-container)] px-3 text-[var(--md-on-surface)] shadow-none hover:bg-[var(--md-surface-container-high)]'
+        }
+      >
+        <Volume2 className="size-4 shrink-0 text-[var(--md-on-surface-variant)]" />
+        <SelectValue placeholder="Voice" />
+      </SelectTrigger>
+      <SelectContent align="end" className="min-w-[7.5rem]">
+        {voiceOptions.map((option) => (
+          <SelectItem key={option.value} value={option.value} textValue={option.label}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+}
+
+function IconBtn({ children,
   title,
   onClick,
   danger,
@@ -414,32 +402,6 @@ function IconBtn({
       }}
     >
       {children}
-    </button>
-  )
-}
-
-function MenuItem({
-  label,
-  active,
-  onClick,
-}: {
-  label: string
-  active: boolean
-  onClick: () => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm"
-      style={{
-        color: 'var(--md-on-surface)',
-        background: active ? 'var(--md-secondary-container)' : 'transparent',
-      }}
-      role="menuitem"
-    >
-      <span>{label}</span>
-      {active && <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>Selected</span>}
     </button>
   )
 }

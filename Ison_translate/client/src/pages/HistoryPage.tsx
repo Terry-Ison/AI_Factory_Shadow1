@@ -286,13 +286,13 @@ export function HistoryPage() {
   }
 
   return (
-    <main className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col overflow-hidden p-4 md:p-6">
+    <main className="flex h-full min-h-0 w-full flex-col overflow-hidden p-4 md:p-6">
       <div className="flex min-h-0 flex-1 flex-col gap-5">
         <header
           className="shrink-0 overflow-hidden"
         >
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-2xl">
+            <div className="max-w-3xl">
               <h1 className="text-xl leading-10 md:text-2xl font-bold" style={{ color: 'var(--md-on-surface)' }}>
                 Your conversations
               </h1>
@@ -316,9 +316,8 @@ export function HistoryPage() {
             style={{ borderBottom: '1px solid var(--md-outline-variant)' }}
           >
             <label
-              className="flex py-2 flex-1 items-center gap-3 px-3"
+              className="flex py-1.5 flex-1 items-center gap-3 px-3"
               style={{
-                background: 'var(--md-surface-container)',
                 border: '1px solid var(--md-outline-variant)',
                 borderRadius: 'var(--shape-sm)',
                 color: 'var(--md-on-surface-variant)',
@@ -329,11 +328,11 @@ export function HistoryPage() {
                 type="text"
                 name="search"
                 id="search"
+                autoComplete="off"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search people, languages, transcripts, or session codes"
-                className="min-w-0 flex-1 bg-transparent text-sm"
-                style={{ color: 'var(--md-on-surface)' }}
+                className="min-w-0 flex-1 bg-transparent text-sm "
               />
             </label>
 
@@ -342,14 +341,13 @@ export function HistoryPage() {
                 size="default"
                 className="py-2 gap-2 border-[var(--md-outline-variant)] bg-[var(--md-surface-container)] px-3 text-[var(--md-on-surface)] shadow-none hover:bg-[var(--md-surface-container-high)]"
               >
-                <SlidersHorizontal size={16} className="shrink-0 text-[var(--md-outline)]" />
                 <SelectValue placeholder="Filter" />
               </SelectTrigger>
               <SelectContent align="end" className="min-w-[9.5rem]">
                 {filters.map((item) => (
                   <SelectItem key={item.value} value={item.value}>
                     {item.label}
-                  </SelectItem>
+                    </SelectItem>
                 ))}
               </SelectContent>
             </Select>

@@ -865,10 +865,10 @@ export function UserManagementPage() {
           </div>
 
           <div className="flex flex-row flex-row-reverse justify-between gap-3 xl:items-end">
-            <button type="button" className="md-btn md-btn-filled w-fit gap-2" onClick={() => setInviteOpen(true)}>
-              <UserPlus size={17} />
-              Invite user
-            </button>
+            <Button variant="default" size="default" onClick={() => setInviteOpen(true)}>
+              <Send size={14} />
+              <span className="text-sm font-medium">Invite User</span>
+            </Button>
             <div className="grid min-w-0 gap-2 sm:grid-cols-2 md:grid-cols-4">
               <StatCard icon={<Users size={14} />} label="Total users" value={users.length} subtext="Registered accounts" />
               <StatCard icon={<UserCheck size={14} />} label="Active" value={activeCount} subtext="Recently healthy" />
@@ -883,10 +883,10 @@ export function UserManagementPage() {
         <UserDetailView user={selectedUser} onBack={() => setSelectedId(null)} />
       ) : (
         <section className="flex min-h-0 flex-1 flex-col overflow-hidden" style={{ background: 'var(--md-surface-container-lowest)', border: '1px solid var(--md-outline-variant)', borderRadius: 'var(--shape-sm)' }}>
-          <div className="flex justify-between space-y-3 px-4 pt-2 gap-2 items-center" style={{ borderBottom: '1px solid var(--md-outline-variant)' }}>
-            <label className="flex py-2 items-center gap-3 px-3 " style={{ background: 'var(--md-surface-container)', border: '1px solid var(--md-outline-variant)', borderRadius: 'var(--shape-sm)', color: 'var(--md-on-surface-variant)' }}>
+          <div className="flex justify-between space-y-3 px-4 py-2 gap-2 items-center" style={{ borderBottom: '1px solid var(--md-outline-variant)' }}>
+            <label className="flex py-2 items-center gap-3 px-3 my-auto" style={{  border: '1px solid var(--md-outline-variant)', borderRadius: 'var(--shape-sm)', color: 'var(--md-on-surface-variant)' }}>
               <Search size={18} />
-              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search users, roles, locations" className="min-w-0 flex-1 bg-transparent text-sm outline-none" style={{ color: 'var(--md-on-surface)' }} />
+              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search users, roles, locations" className="min-w-0 flex-1 bg-transparent text-sm outline-none" />
             </label>
 
             <Select value={filter} onValueChange={(value) => setFilter(value as UserFilter)}>

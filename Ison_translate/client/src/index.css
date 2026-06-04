@@ -252,6 +252,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none !important;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    STATE LAYERS
    Apply .md-state-layer inside any interactive element that
