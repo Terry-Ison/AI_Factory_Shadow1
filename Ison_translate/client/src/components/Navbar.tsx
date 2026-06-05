@@ -21,7 +21,7 @@ export function Navbar() {
 
   return (
     <header
-      className="flex h-16 shrink-0 items-center gap-1 px-2"
+      className="flex h-16 shrink-0 items-center gap-1 px-2 bg-white"
       style={{
       
         boxShadow: scrolled ? 'var(--elevation-2)' : 'none',

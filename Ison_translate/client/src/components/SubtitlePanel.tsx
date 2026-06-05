@@ -55,8 +55,8 @@ export function SubtitlePanel({ title, badge, lines, emptyText }: Props) {
         <span
           className="md-chip-tonal"
           style={{
-            background: 'var(--md-secondary-container)',
-            color: 'var(--md-on-secondary-container)',
+            background: 'var(--accent)',
+            color: 'var(--accent-foreground)',
             fontSize: '0.75rem',
             fontWeight: 500,
             letterSpacing: '0.03125rem',

@@ -362,15 +362,15 @@ export function TranslatorPage() {
         {/* M3 Filled card — waiting callout */}
         {session && !partnerConnected && (
           <div
-            className="shrink-0 px-4 py-3"
+            className="shrink-0 px-4 py-3  border"
             style={{
-              background: 'var(--md-primary-container)',
+              // background: 'var(--md-primary-container)',
               borderRadius: 'var(--shape-md)',
             }}
           >
             <p
               className="font-medium"
-              style={{ fontSize: '0.875rem', lineHeight: '1.25rem', color: 'var(--md-on-primary-container)' }}
+              style={{ fontSize: '0.875rem', lineHeight: '1.25rem' }}
             >
               Waiting for your partner to join…
             </p>
