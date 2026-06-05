@@ -90,10 +90,13 @@ export function SessionDetailPage() {
 
   function copyCode() {
     if (!detail) return
-    void navigator.clipboard.writeText(detail.sessionId).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
-    })
+    void navigator.clipboard
+      .writeText(detail.sessionId)
+      .then(() => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 1500)
+      })
+      .catch(() => {})
   }
 
   if (loading) {

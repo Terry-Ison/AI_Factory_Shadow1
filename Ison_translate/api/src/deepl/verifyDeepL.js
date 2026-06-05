@@ -1,43 +1,47 @@
 /**
- * DeepL API key and Voice endpoint health check.
- *
- * Result is cached with a TTL so join_session and /health avoid blocking on
- * a live DeepL round-trip on every request after the first check.
- * Concurrent callers share a single in-flight verification via cached.pending.
+ * DeepL Voice API health check using DB-resolved provider credentials.
  */
-import { config } from '../config.js'
+import { resolveVoiceConfig } from '../voice/providerResolver.js'
 
 const VERIFY_TIMEOUT_MS = 8000
 const VERIFY_TTL_MS = 5 * 60 * 1000
 
-/** @type {{ checked: boolean, ok: boolean, error: string | null, checkedAt: number, pending: Promise<{ checked: boolean, ok: boolean, error: string | null }> | null }} */
-let cached = { checked: false, ok: false, error: null, checkedAt: 0, pending: null }
+/** @type {{ checked: boolean, ok: boolean, error: string | null, checkedAt: number, providerId: string | null, pending: Promise<{ checked: boolean, ok: boolean, error: string | null }> | null }} */
+let cached = {
+  checked: false,
+  ok: false,
+  error: null,
+  checkedAt: 0,
+  providerId: null,
+  pending: null,
+}
 
-function isCacheStale() {
+function isCacheStale(voiceConfig) {
   if (!cached.checked) return true
-  return Date.now() - cached.checkedAt > VERIFY_TTL_MS
+  if (Date.now() - cached.checkedAt > VERIFY_TTL_MS) return true
+  if (voiceConfig?.providerId && cached.providerId !== voiceConfig.providerId) return true
+  return false
 }
 
 /**
- * Verifies that DEEPL_AUTH_KEY is valid for the Voice API.
- *
- * Makes a minimal POST to /v3/voice/realtime (no WebSocket opened).
- *
+ * @param {{ apiKey: string, apiUrl: string, providerId?: string } | null | undefined} voiceConfig
  * @returns {Promise<{ checked: boolean, ok: boolean, error: string | null }>}
  */
-export async function verifyDeepLAccess() {
-  if (!config.deeplAuthKey) {
+export async function verifyDeepLAccess(voiceConfig) {
+  const resolved = voiceConfig ?? (await resolveVoiceConfig(null))
+  if (!resolved?.apiKey) {
     cached = {
       checked: true,
       ok: false,
-      error: 'DEEPL_AUTH_KEY is not set in api/.env',
+      error: 'No voice provider configured. Set a global default in the provider catalog.',
       checkedAt: Date.now(),
+      providerId: null,
       pending: null,
     }
     return cached
   }
 
-  if (!isCacheStale()) {
+  if (!isCacheStale(resolved)) {
     return cached
   }
 
@@ -49,10 +53,10 @@ export async function verifyDeepLAccess() {
 
   cached.pending = (async () => {
     try {
-      const response = await fetch(`${config.deeplApiUrl}/v3/voice/realtime`, {
+      const response = await fetch(`${resolved.apiUrl}/v3/voice/realtime`, {
         method: 'POST',
         headers: {
-          Authorization: `DeepL-Auth-Key ${config.deeplAuthKey}`,
+          Authorization: `DeepL-Auth-Key ${resolved.apiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -78,6 +82,7 @@ export async function verifyDeepLAccess() {
           ok: false,
           error: `DeepL rejected API key (${response.status}): ${message}`,
           checkedAt: Date.now(),
+          providerId: resolved.providerId ?? null,
           pending: null,
         }
         return cached
@@ -88,6 +93,7 @@ export async function verifyDeepLAccess() {
         ok: true,
         error: null,
         checkedAt: Date.now(),
+        providerId: resolved.providerId ?? null,
         pending: null,
       }
       return cached
@@ -97,6 +103,7 @@ export async function verifyDeepLAccess() {
         ok: false,
         error: err instanceof Error ? err.message : 'DeepL connectivity check failed',
         checkedAt: Date.now(),
+        providerId: resolved.providerId ?? null,
         pending: null,
       }
       return cached
@@ -107,12 +114,23 @@ export async function verifyDeepLAccess() {
 }
 
 /**
- * Synchronous read of the last verification result.
- * Use this on the hot path (join_session) instead of await verifyDeepLAccess().
+ * @param {{ providerId?: string } | null | undefined} [voiceConfig]
  */
-export function getDeepLStatus() {
-  if (isCacheStale() && !cached.pending) {
+export function getDeepLStatus(voiceConfig) {
+  if (isCacheStale(voiceConfig) && !cached.pending) {
     return { checked: false, ok: false, error: cached.error }
   }
   return cached
+}
+
+/** Invalidate cache when global default changes. */
+export function invalidateDeepLStatus() {
+  cached = {
+    checked: false,
+    ok: false,
+    error: null,
+    checkedAt: 0,
+    providerId: null,
+    pending: null,
+  }
 }

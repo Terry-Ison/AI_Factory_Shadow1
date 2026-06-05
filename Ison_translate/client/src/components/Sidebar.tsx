@@ -1,4 +1,14 @@
-import { History, LogOut, Mic, User } from 'lucide-react'
+import {
+  BarChart3,
+  Building2,
+  History,
+  KeyRound,
+  LogOut,
+  Mic,
+  Shield,
+  User,
+  Users,
+} from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
@@ -6,13 +16,8 @@ type Props = {
   collapsed: boolean
 }
 
-/**
- * M3 Navigation Drawer — Modal / standard variant.
- * Active destination: secondary-container fill + on-secondary-container text.
- * Inactive: on-surface-variant text.
- */
 export function Sidebar({ collapsed }: Props) {
-  const { user, isGuest, logout } = useAuth()
+  const { user, isGuest, isSuperAdmin, isTenantAdmin, canAccessHistory, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -34,7 +39,6 @@ export function Sidebar({ collapsed }: Props) {
         overflow: 'hidden',
       }}
     >
-      {/* Section heading — only visible when expanded */}
       {!collapsed && (
         <div
           className="px-4 pb-1 pt-5"
@@ -57,7 +61,7 @@ export function Sidebar({ collapsed }: Props) {
           active={isActive('/app/translate')}
           onClick={() => navigate('/app/translate')}
         />
-        {!isGuest && user && (
+        {!isGuest && user && canAccessHistory && (
           <NavItem
             icon={<History size={20} />}
             label="History"
@@ -66,9 +70,62 @@ export function Sidebar({ collapsed }: Props) {
             onClick={() => navigate('/app/history')}
           />
         )}
+
+        {isTenantAdmin && (
+          <>
+            {!collapsed && <SectionLabel>Admin</SectionLabel>}
+            <NavItem
+              icon={<Users size={20} />}
+              label="Users"
+              collapsed={collapsed}
+              active={isActive('/app/admin/users')}
+              onClick={() => navigate('/app/admin/users')}
+            />
+            <NavItem
+              icon={<BarChart3 size={20} />}
+              label="Analytics"
+              collapsed={collapsed}
+              active={isActive('/app/admin/analytics')}
+              onClick={() => navigate('/app/admin/analytics')}
+            />
+            <NavItem
+              icon={<KeyRound size={20} />}
+              label="Voice providers"
+              collapsed={collapsed}
+              active={isActive('/app/admin/voice-providers')}
+              onClick={() => navigate('/app/admin/voice-providers')}
+            />
+          </>
+        )}
+
+        {isSuperAdmin && (
+          <>
+            {!collapsed && <SectionLabel>Super admin</SectionLabel>}
+            <NavItem
+              icon={<Building2 size={20} />}
+              label="Organizations"
+              collapsed={collapsed}
+              active={isActive('/app/super-admin/organizations')}
+              onClick={() => navigate('/app/super-admin/organizations')}
+            />
+            <NavItem
+              icon={<Users size={20} />}
+              label="All users"
+              collapsed={collapsed}
+              active={isActive('/app/super-admin/users')}
+              onClick={() => navigate('/app/super-admin/users')}
+            />
+            <NavItem
+              icon={<Shield size={20} />}
+              label="Provider catalog"
+              collapsed={collapsed}
+              active={isActive('/app/super-admin/voice-providers')}
+              onClick={() => navigate('/app/super-admin/voice-providers')}
+            />
+          </>
+        )}
       </nav>
 
-      {/* User section */}
       <div
         className="px-2 pb-2"
         style={{ borderTop: '1px solid var(--md-outline-variant)' }}
@@ -89,16 +146,10 @@ export function Sidebar({ collapsed }: Props) {
               {user.displayName.charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0">
-              <p
-                className="truncate text-sm font-medium"
-                style={{ color: 'var(--md-on-surface)' }}
-              >
+              <p className="truncate text-sm font-medium" style={{ color: 'var(--md-on-surface)' }}>
                 {user.displayName}
               </p>
-              <p
-                className="truncate text-xs"
-                style={{ color: 'var(--md-on-surface-variant)' }}
-              >
+              <p className="truncate text-xs" style={{ color: 'var(--md-on-surface-variant)' }}>
                 {user.email}
               </p>
             </div>
@@ -107,12 +158,7 @@ export function Sidebar({ collapsed }: Props) {
         {isGuest && !collapsed && (
           <div className="mb-1 flex items-center gap-3 px-3 py-3">
             <User size={20} style={{ color: 'var(--md-on-surface-variant)' }} />
-            <span
-              className="text-sm"
-              style={{ color: 'var(--md-on-surface-variant)' }}
-            >
-              Guest
-            </span>
+            <span className="text-sm" style={{ color: 'var(--md-on-surface-variant)' }}>Guest</span>
           </div>
         )}
         <NavItem
@@ -124,6 +170,23 @@ export function Sidebar({ collapsed }: Props) {
         />
       </div>
     </aside>
+  )
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="px-4 pb-1 pt-4"
+      style={{
+        fontSize: '0.6875rem',
+        fontWeight: 500,
+        letterSpacing: '0.05rem',
+        textTransform: 'uppercase',
+        color: 'var(--md-outline)',
+      }}
+    >
+      {children}
+    </div>
   )
 }
 
@@ -147,12 +210,8 @@ function NavItem({ icon, label, collapsed, active, onClick }: NavItemProps) {
         padding: collapsed ? '0' : '0 1rem',
         justifyContent: collapsed ? 'center' : 'flex-start',
         borderRadius: 'var(--shape-full)',
-        background: active
-          ? 'var(--md-secondary-container)'
-          : 'transparent',
-        color: active
-          ? 'var(--md-on-secondary-container)'
-          : 'var(--md-on-surface-variant)',
+        background: active ? 'var(--md-secondary-container)' : 'transparent',
+        color: active ? 'var(--md-on-secondary-container)' : 'var(--md-on-surface-variant)',
         border: 'none',
         cursor: 'pointer',
         transition: 'background 150ms, color 150ms',
@@ -160,26 +219,10 @@ function NavItem({ icon, label, collapsed, active, onClick }: NavItemProps) {
         overflow: 'hidden',
       }}
     >
-      {/* State layer */}
-      <span
-        aria-hidden="true"
-        style={{
-          position: 'absolute',
-          inset: 0,
-          borderRadius: 'inherit',
-          background: 'currentColor',
-          opacity: 0,
-          transition: 'opacity 100ms',
-          pointerEvents: 'none',
-        }}
-        className="nav-state-layer"
-      />
       <span className="relative z-10 flex shrink-0 items-center justify-center" style={{ width: '1.5rem' }}>
         {icon}
       </span>
-      {!collapsed && (
-        <span className="relative z-10 truncate">{label}</span>
-      )}
+      {!collapsed && <span className="relative z-10 truncate">{label}</span>}
     </button>
   )
 }

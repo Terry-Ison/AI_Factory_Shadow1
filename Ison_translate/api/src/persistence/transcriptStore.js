@@ -10,11 +10,11 @@ export async function appendTranscript(params) {
 
   try {
     const prisma = getPrisma()
-    const sequence = await prisma.transcriptSegment.count({
+    const sequence = await prisma.transcriptsegment.count({
       where: { sessionId: params.sessionDbId },
     })
 
-    await prisma.transcriptSegment.create({
+    await prisma.transcriptsegment.create({
       data: {
         sessionId: params.sessionDbId,
         participantId: params.participantDbId ?? null,

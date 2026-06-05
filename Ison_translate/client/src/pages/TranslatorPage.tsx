@@ -377,7 +377,7 @@ export function TranslatorPage() {
             >
               Share session ID{' '}
               <button
-                onClick={() => navigator.clipboard.writeText(session.sessionId)}
+                onClick={() => void navigator.clipboard.writeText(session.sessionId).catch(() => {})}
                 className="font-mono hover:underline"
                 style={{ color: 'var(--md-on-primary-container)', fontWeight: 600 }}
                 title="Click to copy"

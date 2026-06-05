@@ -55,7 +55,7 @@ export async function openParticipantRecordings(ctx) {
 
   try {
     const prisma = getPrisma()
-    const sourceRow = await prisma.audioRecording.create({
+    const sourceRow = await prisma.audiorecording.create({
       data: {
         sessionId: ctx.sessionDbId,
         participantId: ctx.participantDbId,
@@ -68,7 +68,7 @@ export async function openParticipantRecordings(ctx) {
 
     const targetPcm = join(baseDir, 'target_tts.pcm')
     const targetWav = join(baseDir, 'target_tts.wav')
-    const targetRow = await prisma.audioRecording.create({
+    const targetRow = await prisma.audiorecording.create({
       data: {
         sessionId: ctx.sessionDbId,
         participantId: ctx.participantDbId,
@@ -167,7 +167,7 @@ async function finalizeRecording(rec, sessionDbId) {
 
         const durationMs = Math.round((pcm.length / 2 / rec.sampleRate) * 1000)
         const prisma = getPrisma()
-        await prisma.audioRecording.update({
+        await prisma.audiorecording.update({
           where: { id: rec.recordingId },
           data: {
             byteLength: pcm.length,

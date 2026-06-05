@@ -2,6 +2,8 @@ import { Router } from 'express'
 import rateLimit from 'express-rate-limit'
 import { createPendingSession, getPrisma } from '../persistence/index.js'
 import { config } from '../config.js'
+import { optionalAuth } from '../middleware/requireAuth.js'
+import { resolveVoiceConfig } from '../voice/providerResolver.js'
 import {
   createSession,
   getSessionSnapshot,
@@ -31,9 +33,10 @@ router.post('/sessions', sessionCreateLimiter, async (_req, res) => {
   })
 })
 
-router.get('/languages', async (_req, res) => {
-  if (!config.deeplAuthKey) {
-    res.status(503).json({ error: 'DEEPL_AUTH_KEY is not configured' })
+router.get('/languages', optionalAuth, async (req, res) => {
+  const voiceConfig = await resolveVoiceConfig(req.user?.orgId)
+  if (!voiceConfig?.apiKey) {
+    res.status(503).json({ error: 'No voice provider configured' })
     return
   }
 
@@ -46,8 +49,8 @@ router.get('/languages', async (_req, res) => {
   }
 
   try {
-    const response = await fetch(`${config.deeplApiUrl}/v3/languages?resource=voice`, {
-      headers: { Authorization: `DeepL-Auth-Key ${config.deeplAuthKey}` },
+    const response = await fetch(`${voiceConfig.apiUrl}/v3/languages?resource=voice`, {
+      headers: { Authorization: `DeepL-Auth-Key ${voiceConfig.apiKey}` },
       signal: AbortSignal.timeout(8_000),
     })
 
@@ -71,6 +74,19 @@ router.get('/languages', async (_req, res) => {
       error: err instanceof Error ? err.message : 'Failed to fetch DeepL languages',
     })
   }
+})
+
+router.get('/sessions/:sessionId/invite', (req, res) => {
+  const sessionId = normalizeSessionId(req.params.sessionId)
+  if (!sessionId) {
+    res.status(400).json({ error: 'sessionId is required' })
+    return
+  }
+  const base = config.clientOriginPrimary.replace(/\/$/, '')
+  res.json({
+    sessionId,
+    inviteUrl: `${base}/join/${sessionId}`,
+  })
 })
 
 router.get('/sessions/:sessionId', async (req, res) => {

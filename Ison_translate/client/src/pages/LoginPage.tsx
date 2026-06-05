@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import type { RegisterOptions } from '../lib/authApi'
 import { AuthLayout } from '../layouts/AuthLayout'
 import { useAuth } from '../context/AuthContext'
 
@@ -137,7 +138,7 @@ function SignUpView({
   onSuccess,
   onSignIn,
 }: {
-  register: (email: string, password: string, displayName: string) => Promise<void>
+  register: (email: string, password: string, displayName: string, options?: RegisterOptions) => Promise<void>
   onSuccess: () => void
   onSignIn: () => void
 }) {
@@ -145,6 +146,8 @@ function SignUpView({
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
+  const [organizationSlug, setOrganizationSlug] = useState('')
+  const [inviteCode, setInviteCode] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -153,9 +156,16 @@ function SignUpView({
     setError('')
     if (password !== confirm) { setError('Passwords do not match'); return }
     if (password.length < 8) { setError('Password must be at least 8 characters'); return }
+    if (organizationSlug.trim() && inviteCode.trim()) {
+      setError('Provide either organization slug or invite code, not both')
+      return
+    }
     setLoading(true)
     try {
-      await register(email, password, displayName)
+      const options: RegisterOptions = {}
+      if (organizationSlug.trim()) options.organizationSlug = organizationSlug.trim()
+      if (inviteCode.trim()) options.inviteCode = inviteCode.trim()
+      await register(email, password, displayName, options)
       onSuccess()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed')
@@ -174,6 +184,8 @@ function SignUpView({
         <Field label="Email address" type="email" value={email} onChange={setEmail} autoComplete="email" />
         <Field label="Password" type="password" value={password} onChange={setPassword} autoComplete="new-password" />
         <Field label="Confirm password" type="password" value={confirm} onChange={setConfirm} autoComplete="new-password" />
+        <OptionalField label="Organization slug (optional)" value={organizationSlug} onChange={setOrganizationSlug} placeholder="acme-corp" />
+        <OptionalField label="Invite code (optional)" value={inviteCode} onChange={setInviteCode} placeholder="Paste invite code" />
         {error && <ErrorBanner>{error}</ErrorBanner>}
         <PrimaryButton loading={loading} label="Create account" />
       </form>
@@ -276,6 +288,35 @@ function Field({
         onChange={(e) => onChange(e.target.value)}
         required
         autoComplete={autoComplete}
+        className="md-field-input"
+      />
+    </div>
+  )
+}
+
+function OptionalField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+  placeholder?: string
+}) {
+  const id = `field-${label.toLowerCase().replace(/\s+/g, '-')}`
+  return (
+    <div className="md-field">
+      <label className="md-field-label" htmlFor={id}>
+        {label}
+      </label>
+      <input
+        id={id}
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
         className="md-field-input"
       />
     </div>

@@ -4,8 +4,9 @@ import { getPrisma } from './prisma.js'
 
 /**
  * @param {string} sessionSlug normalized session id
+ * @param {{ organizationId?: string }} [options]
  */
-export async function ensureSession(sessionSlug) {
+export async function ensureSession(sessionSlug, options = {}) {
   if (!config.persistEnabled) return null
   if (!config.databaseUrl) {
     persistError('ensureSession', new Error('DATABASE_URL is not set in api/.env'))
@@ -20,13 +21,30 @@ export async function ensureSession(sessionSlug) {
     if (existing.status === 'ended') {
       return prisma.session.update({
         where: { id: existing.id },
-        data: { status: 'active', endedAt: null },
+        data: {
+          status: 'active',
+          endedAt: null,
+          ...(options.organizationId && !existing.organizationId
+            ? { organizationId: options.organizationId }
+            : {}),
+        },
       })
     }
     if (existing.status === 'pending') {
       return prisma.session.update({
         where: { id: existing.id },
-        data: { status: 'active' },
+        data: {
+          status: 'active',
+          ...(options.organizationId && !existing.organizationId
+            ? { organizationId: options.organizationId }
+            : {}),
+        },
+      })
+    }
+    if (options.organizationId && !existing.organizationId) {
+      return prisma.session.update({
+        where: { id: existing.id },
+        data: { organizationId: options.organizationId },
       })
     }
     return existing
@@ -36,6 +54,7 @@ export async function ensureSession(sessionSlug) {
     data: {
       sessionId: sessionSlug,
       status: 'active',
+      ...(options.organizationId ? { organizationId: options.organizationId } : {}),
     },
   })
 }

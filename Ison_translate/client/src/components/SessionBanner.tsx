@@ -1,5 +1,6 @@
-import { ChevronDown, ChevronUp, Copy, LogIn, Mic, MicOff, PhoneOff } from 'lucide-react'
+import { ChevronDown, ChevronUp, Copy, Link2, LogIn, Mic, MicOff, PhoneOff } from 'lucide-react'
 import { useState } from 'react'
+import { fetchSessionInvite } from '../lib/adminApi'
 import { languageLabel } from '../config'
 import type { SessionConfig } from '../types'
 
@@ -36,15 +37,37 @@ export function SessionBanner({
 }: Props) {
   const [collapsed, setCollapsed] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [linkCopied, setLinkCopied] = useState(false)
 
   const sessionId = session?.sessionId ?? ''
 
   function copySessionId() {
     if (!sessionId) return
-    navigator.clipboard.writeText(sessionId).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1800)
-    })
+    navigator.clipboard
+      .writeText(sessionId)
+      .then(() => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 1800)
+      })
+      .catch(() => {})
+  }
+
+  async function copyInviteLink() {
+    if (!sessionId) return
+    let url: string
+    try {
+      const { inviteUrl } = await fetchSessionInvite(sessionId)
+      url = inviteUrl
+    } catch {
+      url = `${window.location.origin}/join/${sessionId}`
+    }
+    try {
+      await navigator.clipboard.writeText(url)
+      setLinkCopied(true)
+      setTimeout(() => setLinkCopied(false), 1800)
+    } catch {
+      /* clipboard unavailable */
+    }
   }
 
   return (
@@ -84,12 +107,21 @@ export function SessionBanner({
               >
                 <Copy size={14} />
               </button>
-              {copied && (
+              <button
+                className="md-icon-btn"
+                onClick={() => void copyInviteLink()}
+                title="Copy invite link"
+                aria-label="Copy invite link"
+                style={{ width: '2rem', height: '2rem', color: 'var(--md-on-surface-variant)' }}
+              >
+                <Link2 size={14} />
+              </button>
+              {(copied || linkCopied) && (
                 <span
                   className="text-xs"
                   style={{ color: 'var(--md-primary)' }}
                 >
-                  Copied
+                  {linkCopied ? 'Link copied' : 'Copied'}
                 </span>
               )}
             </>

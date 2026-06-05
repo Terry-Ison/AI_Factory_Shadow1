@@ -1,6 +1,11 @@
 import { Router } from 'express'
 import rateLimit from 'express-rate-limit'
-import { signToken } from '../auth/jwt.js'
+import { buildAuthUser, signToken } from '../auth/jwt.js'
+import {
+  loadMembershipClaims,
+  maybePromoteSuperAdmin,
+  resolveOrganization,
+} from '../auth/membership.js'
 import { hashPassword, verifyPassword } from '../auth/password.js'
 import { requireAuth } from '../middleware/requireAuth.js'
 import { getPrisma } from '../persistence/prisma.js'
@@ -16,15 +21,22 @@ const authLimiter = rateLimit({
   message: { error: 'Too many requests. Please slow down.' },
 })
 
-function safeUser(user) {
-  return {
-    id: user.id,
-    email: user.email,
-    displayName: user.displayName,
-    defaultSourceLang: user.defaultSourceLang,
-    defaultTargetLang: user.defaultTargetLang,
-    createdAt: user.createdAt,
+async function issueAuthResponse(user) {
+  const promoted = await maybePromoteSuperAdmin(user)
+  const claims = await loadMembershipClaims(promoted.id, promoted.globalRole)
+  const tokenUser = {
+    id: promoted.id,
+    email: promoted.email,
+    displayName: promoted.displayName,
+    defaultSourceLang: promoted.defaultSourceLang,
+    defaultTargetLang: promoted.defaultTargetLang,
+    createdAt: promoted.createdAt,
+    globalRole: promoted.globalRole ?? claims.globalRole ?? null,
+    orgId: claims.orgId ?? null,
+    orgRole: claims.orgRole ?? null,
+    membershipStatus: claims.membershipStatus ?? null,
   }
+  return { token: signToken(tokenUser), user: buildAuthUser(tokenUser) }
 }
 
 router.post('/register', authLimiter, async (req, res, next) => {
@@ -34,7 +46,7 @@ router.post('/register', authLimiter, async (req, res, next) => {
       return
     }
 
-    const { email, password, displayName } = req.body ?? {}
+    const { email, password, displayName, organizationSlug, inviteCode } = req.body ?? {}
 
     if (!email || typeof email !== 'string') {
       res.status(400).json({ error: 'email is required' })
@@ -48,12 +60,28 @@ router.post('/register', authLimiter, async (req, res, next) => {
       res.status(400).json({ error: 'displayName is required' })
       return
     }
+    if (organizationSlug && inviteCode) {
+      res.status(400).json({ error: 'Provide organizationSlug or inviteCode, not both' })
+      return
+    }
 
     const prisma = getPrisma()
     const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase() } })
     if (existing) {
       res.status(409).json({ error: 'An account with that email already exists' })
       return
+    }
+
+    let org = null
+    if (organizationSlug || inviteCode) {
+      org = await resolveOrganization({
+        slug: organizationSlug,
+        inviteCode,
+      })
+      if (!org) {
+        res.status(400).json({ error: 'Organization not found or inactive' })
+        return
+      }
     }
 
     const passwordHash = await hashPassword(password)
@@ -65,8 +93,20 @@ router.post('/register', authLimiter, async (req, res, next) => {
       },
     })
 
-    const token = signToken(user)
-    res.status(201).json({ token, user: safeUser(user) })
+    if (org) {
+      await prisma.organizationmembership.create({
+        data: {
+          userId: user.id,
+          organizationId: org.id,
+          orgRole: 'member',
+          status: 'pending',
+          updatedAt: new Date(),
+        },
+      })
+    }
+
+    const auth = await issueAuthResponse(user)
+    res.status(201).json(auth)
   } catch (err) {
     next(err)
   }
@@ -94,8 +134,8 @@ router.post('/login', authLimiter, async (req, res, next) => {
       return
     }
 
-    const token = signToken(user)
-    res.json({ token, user: safeUser(user) })
+    const auth = await issueAuthResponse(user)
+    res.json(auth)
   } catch (err) {
     next(err)
   }
@@ -109,7 +149,16 @@ router.get('/me', requireAuth, async (req, res, next) => {
       res.status(404).json({ error: 'User not found' })
       return
     }
-    res.json({ user: safeUser(user) })
+    const promoted = await maybePromoteSuperAdmin(user)
+    const claims = await loadMembershipClaims(promoted.id, promoted.globalRole)
+    res.json({
+      user: buildAuthUser({
+        ...promoted,
+        orgId: claims.orgId,
+        orgRole: claims.orgRole,
+        membershipStatus: claims.membershipStatus,
+      }),
+    })
   } catch (err) {
     next(err)
   }
@@ -126,7 +175,15 @@ router.patch('/me/languages', requireAuth, async (req, res, next) => {
         ...(defaultTargetLang ? { defaultTargetLang } : {}),
       },
     })
-    res.json({ user: safeUser(user) })
+    const claims = await loadMembershipClaims(user.id, user.globalRole)
+    res.json({
+      user: buildAuthUser({
+        ...user,
+        orgId: claims.orgId,
+        orgRole: claims.orgRole,
+        membershipStatus: claims.membershipStatus,
+      }),
+    })
   } catch (err) {
     next(err)
   }

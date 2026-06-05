@@ -1,5 +1,4 @@
 import { verifyToken } from '../auth/jwt.js'
-import { config } from '../config.js'
 import {
   closeSessionStreams,
   closeStream,
@@ -31,6 +30,7 @@ import {
   packetsToBuffers,
 } from '../persistence/index.js'
 import { relayRtcSignal } from './rtcSignaling.js'
+import { resolveVoiceConfig } from '../voice/providerResolver.js'
 
 const { checkAudioRate, clearSocket: clearAudioRate } = createAudioRateLimiter()
 
@@ -48,11 +48,13 @@ export function registerSocketHandlers(io) {
         // Prefer stable account id when a valid JWT is supplied
         let accountUserId = null
         let displayName = null
+        let organizationId = undefined
         if (payload?.authToken) {
           const claims = verifyToken(payload.authToken)
           if (claims) {
             accountUserId = claims.sub
             displayName = claims.displayName
+            if (claims.orgId) organizationId = claims.orgId
           }
         }
         const userId = accountUserId ?? String(payload?.userId ?? socket.id).trim()
@@ -65,7 +67,7 @@ export function registerSocketHandlers(io) {
         const result = joinSession(
           sessionId,
           socket.id,
-          { userId, sourceLang },
+          { userId, sourceLang, organizationId },
           io,
         )
 
@@ -76,8 +78,14 @@ export function registerSocketHandlers(io) {
 
         socket.join(result.sessionId)
 
-        const status = getDeepLStatus()
-        const deepl = status.checked ? status : await verifyDeepLAccess()
+        const ctx = getSessionBySocket(socket.id)
+        const voiceConfig = await resolveVoiceConfig(organizationId)
+        if (ctx?.session) {
+          ctx.session.voiceConfig = voiceConfig
+        }
+
+        const status = getDeepLStatus(voiceConfig)
+        const deepl = status.checked ? status : await verifyDeepLAccess(voiceConfig)
 
         ack?.({
           ok: true,
@@ -105,13 +113,13 @@ export function registerSocketHandlers(io) {
           })
         }
 
-        if (result.peer && config.deeplAuthKey) {
-          preconnectDeepL(io, result.sessionId, socket.id)
-          preconnectDeepL(io, result.sessionId, result.peer.socketId)
+        if (result.peer && voiceConfig) {
+          void preconnectDeepL(io, result.sessionId, socket.id, voiceConfig)
+          void preconnectDeepL(io, result.sessionId, result.peer.socketId, voiceConfig)
         }
 
         if (!deepl.checked) {
-          void verifyDeepLAccess()
+          void verifyDeepLAccess(voiceConfig)
         }
 
         void persistParticipantJoin(socket.id, result.sessionId, {
@@ -122,6 +130,7 @@ export function registerSocketHandlers(io) {
           isInitiator: result.isInitiator,
           accountUserId,
           displayName,
+          organizationId,
         })
       } catch (err) {
         ack?.({
@@ -131,26 +140,13 @@ export function registerSocketHandlers(io) {
       }
     })
 
-    socket.on('audio_chunk', (chunk) => {
+    socket.on('audio_chunk', async (chunk) => {
       try {
         const buffer = normalizeAudioChunk(chunk)
         if (!buffer.length) return
 
         if (!checkAudioRate(socket.id, buffer.length)) {
           emitError(socket, 'Audio rate limit exceeded. Slow down or check your microphone.')
-          return
-        }
-
-        if (!config.deeplAuthKey) {
-          emitError(socket, 'DeepL API key is not configured on the server (api/.env)')
-          return
-        }
-
-        const status = getDeepLStatus()
-        if (!status.checked) {
-          void verifyDeepLAccess()
-        } else if (!status.ok) {
-          emitError(socket, status.error ?? 'DeepL is not available')
           return
         }
 
@@ -161,6 +157,28 @@ export function registerSocketHandlers(io) {
         }
 
         const { session } = ctx
+        let voiceConfig = session.voiceConfig
+        if (!voiceConfig) {
+          voiceConfig = await resolveVoiceConfig(session.organizationId)
+          session.voiceConfig = voiceConfig
+        }
+
+        if (!voiceConfig?.apiKey) {
+          emitError(
+            socket,
+            'No voice provider configured. Ask an admin to set a global default provider.',
+          )
+          return
+        }
+
+        const status = getDeepLStatus(voiceConfig)
+        if (!status.checked) {
+          void verifyDeepLAccess(voiceConfig)
+        } else if (!status.ok) {
+          emitError(socket, status.error ?? 'DeepL is not available')
+          return
+        }
+
         const speaker = getClient(session, socket.id)
         const peer = getPeer(session, socket.id)
         if (!speaker) return
@@ -177,6 +195,7 @@ export function registerSocketHandlers(io) {
             socketId: socket.id,
             sourceLang: speaker.sourceLang,
             targetLang,
+            voiceConfig,
             onEvent: (event) => {
               handleDeepLEvent(io, socket.id, peer.client.socketId, event)
             },
@@ -218,8 +237,9 @@ export function registerSocketHandlers(io) {
  * @param {import('socket.io').Server} io
  * @param {string} sessionId
  * @param {string} socketId
+ * @param {{ apiKey: string, apiUrl: string }} voiceConfig
  */
-function preconnectDeepL(io, sessionId, socketId) {
+function preconnectDeepL(io, sessionId, socketId, voiceConfig) {
   const ctx = getSessionBySocket(socketId)
   if (!ctx) return
 
@@ -233,6 +253,7 @@ function preconnectDeepL(io, sessionId, socketId) {
     socketId,
     sourceLang: speaker.sourceLang,
     targetLang: speaker.targetLang,
+    voiceConfig,
     onEvent: (event) => {
       handleDeepLEvent(io, socketId, peer.client.socketId, event)
     },
@@ -347,7 +368,9 @@ function handleDeepLEvent(io, speakerSocketId, partnerSocketId, event) {
  * @param {import('socket.io').Socket} socket
  */
 async function persistParticipantJoin(socketId, sessionSlug, meta) {
-  const dbSession = await ensureSession(sessionSlug)
+  const dbSession = await ensureSession(sessionSlug, {
+    organizationId: meta.organizationId,
+  })
   if (!dbSession) return
 
   const participant = await addParticipant({

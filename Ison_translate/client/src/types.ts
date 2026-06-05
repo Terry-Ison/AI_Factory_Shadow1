@@ -11,7 +11,7 @@ export type JoinSessionPayload = {
   sessionId: string
   userId: string
   sourceLang: string
-  targetLang: string
+  targetLang?: string
   authToken?: string
 }
 

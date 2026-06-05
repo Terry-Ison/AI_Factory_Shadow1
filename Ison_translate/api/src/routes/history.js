@@ -1,14 +1,13 @@
 import { Router } from 'express'
 import { createReadStream, existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { optionalAuth, requireAuth } from '../middleware/requireAuth.js'
+import { requireActiveMember } from '../middleware/requireAuth.js'
 import { getPrisma } from '../persistence/prisma.js'
 import { normalizeSessionId } from '../rooms/sessionManager.js'
 
 const router = Router()
 
-router.use(optionalAuth)
-router.use(requireAuth)
+router.use(requireActiveMember)
 
 function guestDisplayName(userId) {
   if (userId.startsWith('guest-')) return 'Guest'
@@ -27,7 +26,7 @@ function mapParticipant(p, currentUserId) {
     isYou,
     displayName: isYou
       ? 'You'
-      : p.accountUser?.displayName ?? guestDisplayName(p.userId),
+      : p.user?.displayName ?? guestDisplayName(p.userId),
     joinedAt: p.joinedAt,
     leftAt: p.leftAt ?? null,
   }
@@ -40,7 +39,7 @@ router.get('/sessions', async (req, res, next) => {
     const skip = (page - 1) * limit
 
     const userFilter = {
-      participants: { some: { accountUserId: req.user.id } },
+      participant: { some: { accountUserId: req.user.id } },
     }
 
     const prisma = getPrisma()
@@ -51,7 +50,7 @@ router.get('/sessions', async (req, res, next) => {
         take: limit,
         orderBy: { startedAt: 'desc' },
         include: {
-          participants: {
+          participant: {
             orderBy: { joinedAt: 'asc' },
             select: {
               userId: true,
@@ -61,15 +60,15 @@ router.get('/sessions', async (req, res, next) => {
               accountUserId: true,
               joinedAt: true,
               leftAt: true,
-              accountUser: { select: { displayName: true } },
+              user: { select: { displayName: true } },
             },
           },
-          transcriptSegments: {
+          transcriptsegment: {
             take: 1,
             orderBy: { recordedAt: 'desc' },
             select: { text: true, role: true },
           },
-          _count: { select: { transcriptSegments: true, audioRecordings: true } },
+          _count: { select: { transcriptsegment: true, audiorecording: true } },
         },
       }),
       prisma.session.count({ where: userFilter }),
@@ -80,8 +79,8 @@ router.get('/sessions', async (req, res, next) => {
       limit,
       total,
       sessions: items.map((s) => {
-        const participants = s.participants.map((p) => mapParticipant(p, req.user.id))
-        const preview = s.transcriptSegments[0]?.text?.trim() ?? null
+        const participants = s.participant.map((p) => mapParticipant(p, req.user.id))
+        const preview = s.transcriptsegment[0]?.text?.trim() ?? null
         return {
           sessionId: s.sessionId,
           status: s.status,
@@ -90,8 +89,8 @@ router.get('/sessions', async (req, res, next) => {
           participantCount: participants.length,
           participants,
           transcriptPreview: preview ? preview.slice(0, 160) : null,
-          hasTranscript: s._count.transcriptSegments > 0,
-          hasRecording: s._count.audioRecordings > 0,
+          hasTranscript: s._count.transcriptsegment > 0,
+          hasRecording: s._count.audiorecording > 0,
         }
       }),
     })
@@ -107,15 +106,15 @@ router.get('/sessions/:sessionId', async (req, res, next) => {
     const session = await prisma.session.findFirst({
       where: {
         sessionId,
-        participants: { some: { accountUserId: req.user.id } },
+        participant: { some: { accountUserId: req.user.id } },
       },
       include: {
-        participants: {
+        participant: {
           orderBy: { joinedAt: 'asc' },
-          include: { accountUser: { select: { displayName: true } } },
+          include: { user: { select: { displayName: true } } },
         },
-        transcriptSegments: { orderBy: [{ recordedAt: 'asc' }, { sequence: 'asc' }] },
-        audioRecordings: { orderBy: { createdAt: 'asc' } },
+        transcriptsegment: { orderBy: [{ recordedAt: 'asc' }, { sequence: 'asc' }] },
+        audiorecording: { orderBy: { createdAt: 'asc' } },
       },
     })
 
@@ -124,7 +123,7 @@ router.get('/sessions/:sessionId', async (req, res, next) => {
       return
     }
 
-    const participants = session.participants.map((p) => mapParticipant(p, req.user.id))
+    const participants = session.participant.map((p) => mapParticipant(p, req.user.id))
 
     res.json({
       sessionId: session.sessionId,
@@ -132,8 +131,8 @@ router.get('/sessions/:sessionId', async (req, res, next) => {
       startedAt: session.startedAt,
       endedAt: session.endedAt,
       participants,
-      transcripts: session.transcriptSegments,
-      recordings: session.audioRecordings.map((r) => ({
+      transcripts: session.transcriptsegment,
+      recordings: session.audiorecording.map((r) => ({
         id: r.id,
         kind: r.kind,
         contentType: r.contentType,
@@ -157,12 +156,12 @@ router.get('/sessions/:sessionId/audio/:recordingId', async (req, res, next) => 
     const { recordingId } = req.params
     const prisma = getPrisma()
 
-    const recording = await prisma.audioRecording.findFirst({
+    const recording = await prisma.audiorecording.findFirst({
       where: {
         id: recordingId,
         session: {
           sessionId,
-          participants: { some: { accountUserId: req.user.id } },
+          participant: { some: { accountUserId: req.user.id } },
         },
       },
     })
@@ -178,7 +177,7 @@ router.get('/sessions/:sessionId/audio/:recordingId', async (req, res, next) => 
       return
     }
 
-    res.setHeader('Content-Type', 'audio/wav')
+    res.setHeader('Content-Type', recording.filePath.endsWith('.wav') ? 'audio/wav' : recording.contentType || 'audio/wav')
     createReadStream(absPath).pipe(res)
   } catch (err) {
     next(err)

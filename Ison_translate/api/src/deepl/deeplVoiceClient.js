@@ -10,7 +10,6 @@
  */
 import WebSocket from 'ws'
 import { pack, unpack } from 'msgpackr'
-import { config } from '../config.js'
 import { logger } from '../utils/logger.js'
 
 /** Incoming mic audio from the browser (16 kHz mono PCM). */
@@ -25,11 +24,12 @@ const RATE_LIMIT_BACKOFF_MS = 15_000
 
 export class DeepLVoiceClient {
   /**
-   * @param {{ sourceLang: string, targetLang: string, onEvent: (event: Record<string, unknown>) => void, onError: (err: Error) => void, onClose: () => void }} options
+   * @param {{ sourceLang: string, targetLang: string, voiceConfig: { apiKey: string, apiUrl: string }, onEvent: (event: Record<string, unknown>) => void, onError: (err: Error) => void, onClose: () => void }} options
    */
   constructor(options) {
     this.sourceLang = options.sourceLang
     this.targetLang = options.targetLang
+    this.voiceConfig = options.voiceConfig
     this.onEvent = options.onEvent
     this.onError = options.onError
     this.onClose = options.onClose
@@ -166,10 +166,10 @@ export class DeepLVoiceClient {
    * Language pair and media formats are fixed here for the lifetime of the stream.
    */
   async requestStreamingSession() {
-    const response = await fetch(`${config.deeplApiUrl}/v3/voice/realtime`, {
+    const response = await fetch(`${this.voiceConfig.apiUrl}/v3/voice/realtime`, {
       method: 'POST',
       headers: {
-        Authorization: `DeepL-Auth-Key ${config.deeplAuthKey}`,
+        Authorization: `DeepL-Auth-Key ${this.voiceConfig.apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -329,7 +329,7 @@ function streamKey(sessionId, socketId) {
  * Callbacks (onEvent, onClientError) are refreshed on each call so the
  * current peer socket id is always used when forwarding results.
  *
- * @param {{ sessionId: string, socketId: string, sourceLang: string, targetLang: string, onEvent: (event: Record<string, unknown>) => void, onClientError?: (message: string) => void }} params
+ * @param {{ sessionId: string, socketId: string, sourceLang: string, targetLang: string, voiceConfig: { apiKey: string, apiUrl: string }, onEvent: (event: Record<string, unknown>) => void, onClientError?: (message: string) => void }} params
  */
 export function getOrCreateStream(params) {
   const key = streamKey(params.sessionId, params.socketId)
@@ -343,6 +343,7 @@ export function getOrCreateStream(params) {
   stream = new DeepLVoiceClient({
     sourceLang: params.sourceLang,
     targetLang: params.targetLang,
+    voiceConfig: params.voiceConfig,
     onEvent: params.onEvent,
     onError: (err) => {
       logger.error(`[DeepL ${key}]`, err.message)

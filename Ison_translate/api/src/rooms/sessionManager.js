@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 
 /** @typedef {{ socketId: string, userId: string, sourceLang: string, targetLang: string, dbSessionId?: string, participantDbId?: string, deeplClient?: import('../deepl/deeplVoiceClient.js').DeepLVoiceClient }} SessionClient */
 
-/** @typedef {{ id: string, clients: Map<string, SessionClient>, createdAt: number }} Session */
+/** @typedef {{ id: string, clients: Map<string, SessionClient>, createdAt: number, organizationId?: string, voiceConfig?: import('../voice/providerResolver.js').VoiceConfig | null }} Session */
 
 /** @type {Map<string, Session>} */
 const sessions = new Map()
@@ -63,7 +63,7 @@ export function cleanupIdleSessions(maxAgeMs) {
 /**
  * @param {string} sessionId
  * @param {string} socketId
- * @param {{ userId: string, sourceLang: string, targetLang?: string }} meta
+ * @param {{ userId: string, sourceLang: string, targetLang?: string, organizationId?: string }} meta
  * @param {import('socket.io').Server} [io]
  */
 export function joinSession(sessionId, socketId, meta, io) {
@@ -81,6 +81,10 @@ export function joinSession(sessionId, socketId, meta, io) {
 
   if (io) {
     pruneSession(session, io)
+  }
+
+  if (meta.organizationId && !session.organizationId) {
+    session.organizationId = meta.organizationId
   }
 
   // Same browser tab reconnecting with a new socket id

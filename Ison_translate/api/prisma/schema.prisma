@@ -7,100 +7,179 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum SessionStatus {
+model audiorecording {
+  id            String              @id @default(cuid())
+  sessionId     String
+  participantId String?
+  kind          audiorecording_kind
+  contentType   String
+  sampleRate    Int
+  filePath      String
+  byteLength    Int                 @default(0)
+  durationMs    Int?
+  createdAt     DateTime            @default(now())
+  finalizedAt   DateTime?
+  participant   participant?        @relation(fields: [participantId], references: [id], map: "AudioRecording_participantId_fkey")
+  session       session             @relation(fields: [sessionId], references: [id], onDelete: Cascade, map: "AudioRecording_sessionId_fkey")
+
+  @@index([participantId], map: "AudioRecording_participantId_fkey")
+  @@index([sessionId], map: "AudioRecording_sessionId_idx")
+}
+
+model organization {
+  id                        String                      @id @default(cuid())
+  name                      String
+  slug                      String                      @unique(map: "Organization_slug_key")
+  inviteCode                String                      @unique(map: "Organization_inviteCode_key")
+  isActive                  Boolean                     @default(true)
+  createdAt                 DateTime                    @default(now())
+  updatedAt                 DateTime                    @updatedAt
+  organizationmembership    organizationmembership[]
+  organizationvoiceprovider organizationvoiceprovider[]
+  session                   session[]
+}
+
+model organizationmembership {
+  id             String                         @id @default(cuid())
+  userId         String
+  organizationId String
+  orgRole        organizationmembership_orgRole @default(member)
+  status         organizationmembership_status  @default(pending)
+  createdAt      DateTime                       @default(now())
+  updatedAt      DateTime                       @updatedAt
+  organization   organization                   @relation(fields: [organizationId], references: [id], onDelete: Cascade, map: "OrganizationMembership_organizationId_fkey")
+  user           user                           @relation(fields: [userId], references: [id], onDelete: Cascade, map: "OrganizationMembership_userId_fkey")
+
+  @@unique([userId, organizationId], map: "OrganizationMembership_userId_organizationId_key")
+  @@index([organizationId], map: "OrganizationMembership_organizationId_idx")
+  @@index([userId], map: "OrganizationMembership_userId_idx")
+}
+
+model organizationvoiceprovider {
+  id              String        @id @default(cuid())
+  organizationId  String
+  voiceProviderId String
+  enabled         Boolean       @default(true)
+  isDefault       Boolean       @default(false)
+  organization    organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade, map: "OrganizationVoiceProvider_organizationId_fkey")
+  voiceprovider   voiceprovider @relation(fields: [voiceProviderId], references: [id], onDelete: Cascade, map: "OrganizationVoiceProvider_voiceProviderId_fkey")
+
+  @@unique([organizationId, voiceProviderId], map: "OrganizationVoiceProvider_organizationId_voiceProviderId_key")
+  @@index([organizationId], map: "OrganizationVoiceProvider_organizationId_idx")
+  @@index([voiceProviderId], map: "OrganizationVoiceProvider_voiceProviderId_fkey")
+}
+
+model participant {
+  id                String              @id @default(cuid())
+  sessionId         String
+  userId            String
+  clientId          String
+  sourceLang        String
+  targetLang        String
+  isInitiator       Boolean             @default(false)
+  joinedAt          DateTime            @default(now())
+  leftAt            DateTime?
+  accountUserId     String?
+  audiorecording    audiorecording[]
+  user              user?               @relation(fields: [accountUserId], references: [id], map: "Participant_accountUserId_fkey")
+  session           session             @relation(fields: [sessionId], references: [id], onDelete: Cascade, map: "Participant_sessionId_fkey")
+  transcriptsegment transcriptsegment[]
+
+  @@index([accountUserId], map: "Participant_accountUserId_idx")
+  @@index([sessionId], map: "Participant_sessionId_idx")
+  @@index([userId], map: "Participant_userId_idx")
+}
+
+model session {
+  id                String              @id @default(cuid())
+  sessionId         String              @unique(map: "Session_sessionId_key")
+  status            session_status      @default(pending)
+  startedAt         DateTime            @default(now())
+  endedAt           DateTime?
+  organizationId    String?
+  audiorecording    audiorecording[]
+  participant       participant[]
+  organization      organization?       @relation(fields: [organizationId], references: [id], map: "Session_organizationId_fkey")
+  transcriptsegment transcriptsegment[]
+
+  @@index([organizationId], map: "Session_organizationId_idx")
+}
+
+model transcriptsegment {
+  id            String                 @id @default(cuid())
+  sessionId     String
+  participantId String?
+  role          transcriptsegment_role
+  language      String
+  text          String                 @db.Text
+  isFinal       Boolean                @default(true)
+  sequence      Int
+  recordedAt    DateTime               @default(now())
+  participant   participant?           @relation(fields: [participantId], references: [id], map: "TranscriptSegment_participantId_fkey")
+  session       session                @relation(fields: [sessionId], references: [id], onDelete: Cascade, map: "TranscriptSegment_sessionId_fkey")
+
+  @@index([participantId], map: "TranscriptSegment_participantId_fkey")
+  @@index([sessionId, recordedAt], map: "TranscriptSegment_sessionId_recordedAt_idx")
+}
+
+model user {
+  id                     String                   @id @default(cuid())
+  email                  String                   @unique(map: "User_email_key")
+  passwordHash           String
+  displayName            String
+  defaultSourceLang      String                   @default("en")
+  defaultTargetLang      String                   @default("es")
+  createdAt              DateTime                 @default(now())
+  globalRole             user_globalRole?
+  organizationmembership organizationmembership[]
+  participant            participant[]
+}
+
+model voiceprovider {
+  id                        String                      @id @default(cuid())
+  name                      String
+  type                      voiceprovider_type          @default(deepl)
+  apiUrl                    String
+  apiKeyCiphertext          String                      @db.Text
+  isActive                  Boolean                     @default(true)
+  isGlobalDefault           Boolean                     @default(false)
+  createdAt                 DateTime                    @default(now())
+  updatedAt                 DateTime                    @updatedAt
+  organizationvoiceprovider organizationvoiceprovider[]
+}
+
+enum session_status {
   pending
   active
   ended
 }
 
-enum TranscriptRole {
+enum voiceprovider_type {
+  deepl
+}
+
+enum transcriptsegment_role {
   source
   translation
 }
 
-enum AudioKind {
+enum organizationmembership_orgRole {
+  tenant_admin
+  member
+}
+
+enum audiorecording_kind {
   source_uplink
   target_tts
 }
 
-model Session {
-  id        String        @id @default(cuid())
-  sessionId String        @unique
-  status    SessionStatus @default(pending)
-  startedAt DateTime      @default(now())
-  endedAt   DateTime?
-
-  participants       Participant[]
-  transcriptSegments TranscriptSegment[]
-  audioRecordings    AudioRecording[]
+enum organizationmembership_status {
+  pending
+  active
+  suspended
+  rejected
 }
 
-model User {
-  id                String   @id @default(cuid())
-  email             String   @unique
-  passwordHash      String
-  displayName       String
-  defaultSourceLang String   @default("en")
-  defaultTargetLang String   @default("es")
-  createdAt         DateTime @default(now())
-
-  participants Participant[]
-}
-
-model Participant {
-  id            String    @id @default(cuid())
-  sessionId     String
-  userId        String
-  clientId      String
-  sourceLang    String
-  targetLang    String
-  isInitiator   Boolean   @default(false)
-  joinedAt      DateTime  @default(now())
-  leftAt        DateTime?
-  accountUserId String?
-
-  session            Session             @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  accountUser        User?               @relation(fields: [accountUserId], references: [id], onDelete: SetNull)
-  transcriptSegments TranscriptSegment[]
-  audioRecordings    AudioRecording[]
-
-  @@index([sessionId])
-  @@index([userId])
-  @@index([accountUserId])
-}
-
-model TranscriptSegment {
-  id            String         @id @default(cuid())
-  sessionId     String
-  participantId String?
-  role          TranscriptRole
-  language      String
-  text          String         @db.Text
-  isFinal       Boolean        @default(true)
-  sequence      Int
-  recordedAt    DateTime       @default(now())
-
-  session     Session      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  participant Participant? @relation(fields: [participantId], references: [id], onDelete: SetNull)
-
-  @@index([sessionId, recordedAt])
-}
-
-model AudioRecording {
-  id            String    @id @default(cuid())
-  sessionId     String
-  participantId String?
-  kind          AudioKind
-  contentType   String
-  sampleRate    Int
-  filePath      String
-  byteLength    Int       @default(0)
-  durationMs    Int?
-  createdAt     DateTime  @default(now())
-  finalizedAt   DateTime?
-
-  session     Session      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  participant Participant? @relation(fields: [participantId], references: [id], onDelete: SetNull)
-
-  @@index([sessionId])
+enum user_globalRole {
+  super_admin
 }

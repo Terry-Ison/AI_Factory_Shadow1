@@ -7,11 +7,20 @@ export type AuthUser = {
   defaultSourceLang: string
   defaultTargetLang: string
   createdAt: string
+  globalRole: 'super_admin' | null
+  orgId: string | null
+  orgRole: 'tenant_admin' | 'member' | null
+  membershipStatus: 'pending' | 'active' | 'suspended' | 'rejected' | null
 }
 
 export type AuthResponse = {
   token: string
   user: AuthUser
+}
+
+export type RegisterOptions = {
+  organizationSlug?: string
+  inviteCode?: string
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -28,14 +37,37 @@ export function authHeaders(token: string): HeadersInit {
   return { Authorization: `Bearer ${token}` }
 }
 
+export function isSuperAdmin(user: AuthUser | null | undefined): boolean {
+  return user?.globalRole === 'super_admin'
+}
+
+export function isTenantAdmin(user: AuthUser | null | undefined): boolean {
+  return (
+    user?.orgRole === 'tenant_admin' &&
+    user?.membershipStatus === 'active'
+  )
+}
+
+export function isPendingMember(user: AuthUser | null | undefined): boolean {
+  return Boolean(user?.orgId && user.membershipStatus === 'pending')
+}
+
+export function canAccessHistory(user: AuthUser | null | undefined): boolean {
+  if (!user) return false
+  if (isSuperAdmin(user)) return true
+  if (!user.orgId) return true
+  return user.membershipStatus === 'active'
+}
+
 export async function register(
   email: string,
   password: string,
   displayName: string,
+  options: RegisterOptions = {},
 ): Promise<AuthResponse> {
   return request('/api/auth/register', {
     method: 'POST',
-    body: JSON.stringify({ email, password, displayName }),
+    body: JSON.stringify({ email, password, displayName, ...options }),
   })
 }
 
