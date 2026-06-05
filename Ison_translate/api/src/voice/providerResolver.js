@@ -1,24 +1,43 @@
+<<<<<<< Updated upstream
+=======
+import { config } from '../config.js'
+>>>>>>> Stashed changes
 import { decryptSecret } from '../utils/secretCrypto.js'
 import { getPrisma } from '../persistence/prisma.js'
 
 /**
+<<<<<<< Updated upstream
  * @typedef {{ type: string, apiKey: string, apiUrl: string, providerId: string }} VoiceConfig
  */
 
 /**
  * Resolve voice API credentials for an organization, or fall back to global default.
+=======
+ * @typedef {{ type: string, apiKey: string, apiUrl: string, providerId?: string }} VoiceConfig
+ */
+
+/**
+ * Resolve voice API credentials for an organization, or fall back to env.
+>>>>>>> Stashed changes
  * @param {string | null | undefined} organizationId
  * @returns {Promise<VoiceConfig | null>}
  */
 export async function resolveVoiceConfig(organizationId) {
+<<<<<<< Updated upstream
   const prisma = getPrisma()
 
   if (organizationId) {
     const link = await prisma.organizationvoiceprovider.findFirst({
+=======
+  if (organizationId) {
+    const prisma = getPrisma()
+    const link = await prisma.organizationVoiceProvider.findFirst({
+>>>>>>> Stashed changes
       where: {
         organizationId,
         enabled: true,
         isDefault: true,
+<<<<<<< Updated upstream
         voiceprovider: { isActive: true },
       },
       include: { voiceprovider: true },
@@ -33,12 +52,36 @@ export async function resolveVoiceConfig(organizationId) {
   })
   if (global) {
     return toVoiceConfig(global)
+=======
+        voiceProvider: { isActive: true },
+      },
+      include: { voiceProvider: true },
+    })
+    if (link?.voiceProvider) {
+      const vp = link.voiceProvider
+      return {
+        type: vp.type,
+        apiKey: decryptSecret(vp.apiKeyCiphertext),
+        apiUrl: vp.apiUrl.replace(/\/$/, ''),
+        providerId: vp.id,
+      }
+    }
+  }
+
+  if (config.deeplAuthKey) {
+    return {
+      type: 'deepl',
+      apiKey: config.deeplAuthKey,
+      apiUrl: config.deeplApiUrl,
+    }
+>>>>>>> Stashed changes
   }
 
   return null
 }
 
 /**
+<<<<<<< Updated upstream
  * @param {{ id: string, type: string, apiUrl: string, apiKeyCiphertext: string }} provider
  * @returns {VoiceConfig | null}
  */
@@ -69,3 +112,12 @@ export async function hasGlobalDefaultProvider() {
   })
   return count > 0
 }
+=======
+ * @param {VoiceConfig | null} voiceConfig
+ */
+export function assertVoiceConfigured(voiceConfig) {
+  if (!voiceConfig?.apiKey) {
+    throw new Error('No voice provider configured for this organization')
+  }
+}
+>>>>>>> Stashed changes

@@ -1,0 +1,25 @@
+$kind: http-request
+name: Login
+method: POST
+url: '{{baseUrl}}/api/auth/login'
+description: Authenticate with email and password. On success, saves the returned token to `{{authToken}}` in the active environment.
+order: 2000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "email": "user@example.com",
+      "password": "password123"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const json = pm.response.json();
+      if (json.token) {
+        pm.environment.set("authToken", json.token);
+      }
+examples: './.resources/Login.resources/examples'

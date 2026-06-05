@@ -3,7 +3,18 @@ import { Server } from 'socket.io'
 import { config } from './config.js'
 import { verifyDeepLAccess } from './deepl/verifyDeepL.js'
 import { socketAuthMiddleware } from './middleware/socketAuth.js'
+<<<<<<< Updated upstream
 import { createApp } from './app.js'
+=======
+import authRouter from './routes/auth.js'
+import historyRouter from './routes/history.js'
+import sessionsRouter from './routes/sessions.js'
+import usersRouter from './routes/users.js'
+import adminVoiceProvidersRouter from './routes/adminVoiceProviders.js'
+import orgVoiceProvidersRouter from './routes/orgVoiceProviders.js'
+import adminOrganizationsRouter from './routes/adminOrganizations.js'
+import adminAnalyticsRouter from './routes/adminAnalytics.js'
+>>>>>>> Stashed changes
 import { disconnectPrisma } from './persistence/prisma.js'
 import { verifyDatabaseConnection } from './utils/verifyDatabase.js'
 import { cleanupIdleSessions } from './rooms/sessionManager.js'
@@ -21,6 +32,64 @@ const io = new Server(httpServer, {
   maxHttpBufferSize: 5e6,
 })
 
+<<<<<<< Updated upstream
+=======
+app.use(helmet())
+app.use(cors({ origin: config.clientOrigin }))
+app.use(express.json())
+app.use(
+  rateLimit({
+    windowMs: 60_000,
+    max: 120,
+    standardHeaders: true,
+    legacyHeaders: false,
+  }),
+)
+
+app.get('/health', async (_req, res) => {
+  const status = getDeepLStatus()
+  const deepl = status.checked ? status : await verifyDeepLAccess()
+  const dbStatus = getDatabaseStatus()
+  const db = dbStatus.checked ? dbStatus : await verifyDatabaseConnection()
+  res.json({
+    ok: true,
+    databaseConfigured: Boolean(config.databaseUrl),
+    databaseOk: db.ok,
+    databaseError: db.error,
+    deeplConfigured: Boolean(config.deeplAuthKey),
+    deeplOk: deepl.ok,
+    deeplError: deepl.error,
+  })
+})
+
+app.get('/admin/health', async (_req, res) => {
+  const status = getDeepLStatus()
+  const deepl = status.checked ? status : await verifyDeepLAccess()
+  const dbStatus = getDatabaseStatus()
+  const db = dbStatus.checked ? dbStatus : await verifyDatabaseConnection()
+  res.json({
+    ok: true,
+    databaseConfigured: Boolean(config.databaseUrl),
+    databaseOk: db.ok,
+    databaseError: db.error,
+    deeplConfigured: Boolean(config.deeplAuthKey),
+    deeplOk: deepl.ok,
+    deeplError: deepl.error,
+    activeSessions: sessionCount(),
+  })
+})
+
+app.use('/api/auth', authRouter)
+app.use('/api/users', usersRouter)
+app.use('/api/admin/voice-providers', adminVoiceProvidersRouter)
+app.use('/api/admin/organization/voice-providers', orgVoiceProvidersRouter)
+app.use('/api/admin/organizations', adminOrganizationsRouter)
+app.use('/api/admin/analytics', adminAnalyticsRouter)
+app.use('/api', sessionsRouter)
+app.use('/api/history', historyRouter)
+app.use(globalErrorHandler)
+
+>>>>>>> Stashed changes
 io.use(socketAuthMiddleware)
 registerSocketHandlers(io)
 

@@ -1,0 +1,26 @@
+$kind: http-request
+name: Register
+method: POST
+url: '{{baseUrl}}/api/auth/register'
+description: Register a new user account. On success, saves the returned token to `{{authToken}}` in the active environment.
+order: 1000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "email": "user@example.com",
+      "password": "password123",
+      "displayName": "Test User"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const json = pm.response.json();
+      if (json.token) {
+        pm.environment.set("authToken", json.token);
+      }
+examples: './.resources/Register.resources/examples'

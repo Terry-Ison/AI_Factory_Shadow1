@@ -1,0 +1,17 @@
+$kind: http-example
+name: 400 Bad Request
+request:
+  method: POST
+  url: '{{baseUrl}}/api/auth/register'
+response:
+  statusCode: 400
+  statusText: Bad Request
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "error": "email, password, and displayName are required"
+      }

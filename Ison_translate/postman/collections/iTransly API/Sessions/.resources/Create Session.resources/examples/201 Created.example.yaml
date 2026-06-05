@@ -1,0 +1,18 @@
+$kind: http-example
+name: 201 Created
+request:
+  method: POST
+  url: '{{baseUrl}}/api/sessions'
+response:
+  statusCode: 201
+  statusText: Created
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "sessionId": "sess_xK9mP2qR7nL4wT8v",
+        "createdAt": "2024-01-15T10:05:00.000Z"
+      }

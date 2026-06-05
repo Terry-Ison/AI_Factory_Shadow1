@@ -2,7 +2,12 @@ import jwt from 'jsonwebtoken'
 import { config } from '../config.js'
 
 /**
+<<<<<<< Updated upstream
  * @param {{ id: string, email: string, displayName: string, globalRole?: string | null, orgId?: string | null, orgRole?: string | null, membershipStatus?: string | null }} user
+=======
+ * @param {{ id: string, email: string, displayName: string, globalRole?: string | null, orgId?: string, orgRole?: string, membershipStatus?: string }} user
+ * @returns {string}
+>>>>>>> Stashed changes
  */
 export function signToken(user) {
   const payload = {
@@ -20,6 +25,10 @@ export function signToken(user) {
 
 /**
  * @param {string} token
+<<<<<<< Updated upstream
+=======
+ * @returns {{ sub: string, email: string, displayName: string, globalRole?: string, orgId?: string, orgRole?: string, membershipStatus?: string } | null}
+>>>>>>> Stashed changes
  */
 export function verifyToken(token) {
   try {
@@ -30,7 +39,11 @@ export function verifyToken(token) {
 }
 
 /**
+<<<<<<< Updated upstream
  * @param {Record<string, unknown>} user
+=======
+ * @param {{ id: string, email: string, displayName: string, globalRole?: string | null, orgId?: string, orgRole?: string, membershipStatus?: string }} user
+>>>>>>> Stashed changes
  */
 export function buildAuthUser(user) {
   return {

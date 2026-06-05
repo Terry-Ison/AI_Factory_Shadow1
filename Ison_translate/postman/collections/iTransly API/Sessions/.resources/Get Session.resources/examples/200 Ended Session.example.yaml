@@ -1,0 +1,21 @@
+$kind: http-example
+name: 200 Ended Session
+request:
+  method: GET
+  url: '{{baseUrl}}/api/sessions/{{sessionId}}'
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "sessionId": "sess_xK9mP2qR7nL4wT8v",
+        "exists": true,
+        "active": false,
+        "participantCount": 0,
+        "partnerConnected": false
+      }

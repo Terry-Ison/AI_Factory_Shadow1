@@ -4,9 +4,15 @@ import { getPrisma } from './prisma.js'
 
 /**
  * @param {string} sessionSlug normalized session id
+<<<<<<< Updated upstream
  * @param {{ organizationId?: string }} [options]
  */
 export async function ensureSession(sessionSlug, options = {}) {
+=======
+ * @param {string | null | undefined} organizationId
+ */
+export async function ensureSession(sessionSlug, organizationId) {
+>>>>>>> Stashed changes
   if (!config.persistEnabled) return null
   if (!config.databaseUrl) {
     persistError('ensureSession', new Error('DATABASE_URL is not set in api/.env'))
@@ -24,9 +30,13 @@ export async function ensureSession(sessionSlug, options = {}) {
         data: {
           status: 'active',
           endedAt: null,
+<<<<<<< Updated upstream
           ...(options.organizationId && !existing.organizationId
             ? { organizationId: options.organizationId }
             : {}),
+=======
+          ...(organizationId && !existing.organizationId ? { organizationId } : {}),
+>>>>>>> Stashed changes
         },
       })
     }
@@ -35,6 +45,7 @@ export async function ensureSession(sessionSlug, options = {}) {
         where: { id: existing.id },
         data: {
           status: 'active',
+<<<<<<< Updated upstream
           ...(options.organizationId && !existing.organizationId
             ? { organizationId: options.organizationId }
             : {}),
@@ -45,6 +56,16 @@ export async function ensureSession(sessionSlug, options = {}) {
       return prisma.session.update({
         where: { id: existing.id },
         data: { organizationId: options.organizationId },
+=======
+          ...(organizationId && !existing.organizationId ? { organizationId } : {}),
+        },
+      })
+    }
+    if (organizationId && !existing.organizationId) {
+      return prisma.session.update({
+        where: { id: existing.id },
+        data: { organizationId },
+>>>>>>> Stashed changes
       })
     }
     return existing
@@ -54,7 +75,11 @@ export async function ensureSession(sessionSlug, options = {}) {
     data: {
       sessionId: sessionSlug,
       status: 'active',
+<<<<<<< Updated upstream
       ...(options.organizationId ? { organizationId: options.organizationId } : {}),
+=======
+      ...(organizationId ? { organizationId } : {}),
+>>>>>>> Stashed changes
     },
   })
 }

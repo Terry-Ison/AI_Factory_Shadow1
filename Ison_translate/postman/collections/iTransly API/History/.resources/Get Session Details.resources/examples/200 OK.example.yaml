@@ -1,0 +1,43 @@
+$kind: http-example
+name: 200 OK
+request:
+  method: GET
+  url: '{{baseUrl}}/api/history/sessions/{{sessionId}}'
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "sessionId": "sess_xK9mP2qR7nL4wT8v",
+        "status": "ended",
+        "startedAt": "2024-01-15T10:05:00.000Z",
+        "endedAt": "2024-01-15T10:35:00.000Z",
+        "participants": [
+          { "userId": "abc123", "displayName": "Test User", "role": "host" },
+          { "userId": "def456", "displayName": "Partner User", "role": "guest" }
+        ],
+        "transcripts": [
+          {
+            "id": "tr_001",
+            "speakerId": "abc123",
+            "originalText": "Hello, how are you?",
+            "translatedText": "Bonjour, comment allez-vous?",
+            "sourceLang": "en",
+            "targetLang": "fr",
+            "timestamp": "2024-01-15T10:06:00.000Z"
+          }
+        ],
+        "recordings": [
+          {
+            "id": "rec_001",
+            "speakerId": "abc123",
+            "durationMs": 3200,
+            "createdAt": "2024-01-15T10:06:00.000Z"
+          }
+        ]
+      }

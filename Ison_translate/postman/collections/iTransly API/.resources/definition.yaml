@@ -1,0 +1,18 @@
+$kind: collection
+name: iTransly API
+description: |-
+  API collection for iTransly — a real-time voice translation app powered by DeepL.
+
+  Covers authentication, session management, language discovery, and translation history.
+
+  **Setup:** Select the "iTransly" environment, then call Register or Login to get a token — it will be saved to {{authToken}} automatically via the login/register test scripts.
+variables:
+  - key: baseUrl
+    value: 'http://localhost:3000'
+    description: Base URL for the iTransly API server
+  - key: authToken
+    value: ''
+    description: Bearer token set automatically after Login or Register
+  - key: sessionId
+    value: ''
+    description: Session ID set automatically after Create Session

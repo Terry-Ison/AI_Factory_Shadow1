@@ -1,0 +1,7 @@
+$kind: http-request
+name: Admin Health Check
+method: GET
+url: '{{baseUrl}}/admin/health'
+description: Extended health check that also includes the count of currently active in-memory sessions.
+order: 2000
+examples: './.resources/Admin Health Check.resources/examples'

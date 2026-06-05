@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 # Ison Translate API Reference
 
 Real-time voice translation backend. HTTP/JSON over Express plus a Socket.IO
@@ -45,13 +46,61 @@ All errors return JSON:
 Rate limits: global 120 req/min per IP; auth 20 req/min; session create 10 req/min;
 admin and users routers 60 req/min.
 
+=======
+# Ison Translate — REST API Reference
+
+**Base URL:** `http://localhost:3001` (set `PORT` in `api/.env`)  
+**Content-Type:** `application/json` for all request/response bodies  
+**Auth:** `Authorization: Bearer <JWT>` on protected routes
+
+---
+
+## Roles & access model
+
+| Role | How obtained | Capabilities |
+|------|-------------|-------------|
+| **Guest / anonymous** | No JWT | Create sessions, join sessions via Socket.IO |
+| **Registered user** | JWT, no org | Sessions, history |
+| **Pending member** | JWT, `membershipStatus: pending` | Sessions only (no history until approved) |
+| **Active member** | JWT, `membershipStatus: active` | Sessions + personal history |
+| **Tenant admin** | JWT, `orgRole: tenant_admin`, `membershipStatus: active` | Org user management, org voice providers, analytics |
+| **Super admin** | JWT, `globalRole: super_admin` | All of the above, global voice provider catalog, org governance |
+
+Super-admin is granted automatically on login/register when the user's email matches `SUPER_ADMIN_EMAIL` in `.env`.
+
+---
+
+## Authentication
+
+JWT claims returned in every auth response:
+
+```jsonc
+{
+  "sub": "<userId>",
+  "email": "user@example.com",
+  "displayName": "Alice",
+  "globalRole": "super_admin",   // or omitted
+  "orgId": "<orgId>",            // or omitted
+  "orgRole": "tenant_admin",     // or omitted
+  "membershipStatus": "active"   // or omitted
+}
+```
+
+>>>>>>> Stashed changes
 ---
 
 ## Health
 
+<<<<<<< Updated upstream
 ### GET `/health`
 Public. Liveness plus database and DeepL configuration status.
 
+=======
+### `GET /health`
+Public. Checks DeepL and database connectivity.
+
+**Response `200`**
+>>>>>>> Stashed changes
 ```json
 {
   "ok": true,
@@ -64,6 +113,7 @@ Public. Liveness plus database and DeepL configuration status.
 }
 ```
 
+<<<<<<< Updated upstream
 ### GET `/admin/health`
 Public. Same as `/health` plus `activeSessions` (in-memory session count).
 
@@ -326,3 +376,695 @@ On failure: `{ "ok": false, "error": "..." }`.
 | `self_transcript` | `{ transcript, isFinal }` | Recognized speech of the speaker. |
 | `translation_result` | `{ translation, isFinal, audioChunks?, audioContentType? }` | Translated text and TTS audio for the partner. |
 | `error_message` | `{ message }` | Recoverable error notice. |
+=======
+---
+
+### `GET /admin/health`
+Public. Includes active in-memory session count.
+
+**Response `200`**
+```json
+{
+  "ok": true,
+  "databaseConfigured": true,
+  "databaseOk": true,
+  "databaseError": null,
+  "deeplConfigured": true,
+  "deeplOk": true,
+  "deeplError": null,
+  "activeSessions": 3
+}
+```
+
+---
+
+## Sessions
+
+### `POST /api/sessions`
+Create a new session. Rate limited: **10/min** per IP.
+
+**Response `201`**
+```json
+{
+  "sessionId": "3e2f1a4b-...",
+  "createdAt": 1717000000000
+}
+```
+
+---
+
+### `GET /api/sessions/:sessionId`
+Check if a session exists (in-memory first, then DB).
+
+**Response `200`**
+```json
+{
+  "sessionId": "3e2f1a4b-...",
+  "exists": true,
+  "active": true,
+  "participantCount": 1,
+  "partnerConnected": false
+}
+```
+
+**Response `404`** — session not found
+```json
+{ "error": "Session not found", "exists": false }
+```
+
+---
+
+### `GET /api/sessions/:sessionId/invite`
+Generate a shareable invite URL for a session. No auth required.
+
+**Response `200`**
+```json
+{
+  "sessionId": "3e2f1a4b-...",
+  "inviteUrl": "http://localhost:5173/join/3e2f1a4b-..."
+}
+```
+
+---
+
+### `GET /api/languages`
+List voice-capable languages from the configured voice provider (DeepL). Cached 10 min. Resolves org's default provider if JWT `orgId` is present.
+
+**Response `200`**
+```json
+{
+  "languages": [
+    { "code": "en", "label": "English" },
+    { "code": "fr", "label": "French" }
+  ],
+  "cached": false
+}
+```
+
+**Response `503`** — no voice provider configured
+
+---
+
+## Auth
+
+Rate limited: **20 requests/min** per IP on all auth routes.
+
+### `POST /api/auth/register`
+Register a new account. Optionally attach to an organization.
+
+**Request body**
+```json
+{
+  "email": "alice@example.com",
+  "password": "min8chars",
+  "displayName": "Alice",
+  "organizationSlug": "acme-corp",   // optional — OR —
+  "inviteCode": "a1b2c3d4e5f6g7h8"  // optional
+}
+```
+`organizationSlug` and `inviteCode` are mutually exclusive. If supplied, membership is created with `status: pending` and must be approved by a tenant admin.
+
+**Response `201`**
+```json
+{
+  "token": "<JWT>",
+  "user": {
+    "id": "...",
+    "email": "alice@example.com",
+    "displayName": "Alice",
+    "defaultSourceLang": "en",
+    "defaultTargetLang": "es",
+    "createdAt": "2026-06-04T...",
+    "globalRole": null,
+    "orgId": "<orgId>",
+    "orgRole": "member",
+    "membershipStatus": "pending"
+  }
+}
+```
+
+**Error responses**
+
+| Status | Reason |
+|--------|--------|
+| `400` | Missing/invalid fields |
+| `400` | Both `organizationSlug` and `inviteCode` provided |
+| `400` | Org not found or inactive |
+| `409` | Email already registered |
+| `503` | `PERSIST_ENABLED=false` |
+
+---
+
+### `POST /api/auth/login`
+Authenticate and receive a JWT.
+
+**Request body**
+```json
+{ "email": "alice@example.com", "password": "min8chars" }
+```
+
+**Response `200`** — same shape as register response
+
+**Error `401`** — invalid credentials
+
+---
+
+### `GET /api/auth/me`
+🔒 Requires JWT. Returns current user with live membership claims.
+
+**Response `200`**
+```json
+{
+  "user": {
+    "id": "...",
+    "email": "alice@example.com",
+    "displayName": "Alice",
+    "defaultSourceLang": "en",
+    "defaultTargetLang": "es",
+    "createdAt": "...",
+    "globalRole": null,
+    "orgId": "...",
+    "orgRole": "tenant_admin",
+    "membershipStatus": "active"
+  }
+}
+```
+
+---
+
+### `PATCH /api/auth/me/languages`
+🔒 Requires JWT. Update preferred translation languages.
+
+**Request body** (all fields optional)
+```json
+{ "defaultSourceLang": "en", "defaultTargetLang": "de" }
+```
+
+**Response `200`** — updated user object
+
+---
+
+## History
+
+🔒 Requires JWT + `membershipStatus: active` (or no org).
+
+### `GET /api/history/sessions`
+Paginated list of sessions the authenticated user participated in.
+
+**Query params:** `?page=1&limit=20` (max limit: 50)
+
+**Response `200`**
+```json
+{
+  "page": 1,
+  "limit": 20,
+  "total": 4,
+  "sessions": [
+    {
+      "sessionId": "...",
+      "status": "ended",
+      "startedAt": "...",
+      "endedAt": "...",
+      "participantCount": 2,
+      "participants": [
+        { "id": "...", "isYou": true, "displayName": "You", "sourceLang": "en", "targetLang": "fr", "isInitiator": true, "joinedAt": "...", "leftAt": "..." }
+      ],
+      "transcriptPreview": "Hello, how are you?",
+      "hasTranscript": true,
+      "hasRecording": true
+    }
+  ]
+}
+```
+
+**Error `403`** — pending or suspended membership
+
+---
+
+### `GET /api/history/sessions/:sessionId`
+Full detail for one session (participants, full transcript, recording metadata).
+
+**Response `200`**
+```json
+{
+  "sessionId": "...",
+  "status": "ended",
+  "startedAt": "...",
+  "endedAt": "...",
+  "participants": [...],
+  "transcripts": [
+    { "id": "...", "role": "source", "language": "en", "text": "Hello", "isFinal": true, "sequence": 1, "recordedAt": "..." }
+  ],
+  "recordings": [
+    {
+      "id": "...",
+      "kind": "source_uplink",
+      "contentType": "audio/wav",
+      "sampleRate": 16000,
+      "byteLength": 204800,
+      "durationMs": 6400,
+      "participantId": "...",
+      "finalizedAt": "...",
+      "audioUrl": "/api/history/sessions/<id>/audio/<recordingId>"
+    }
+  ]
+}
+```
+
+**Error `404`** — session not found or not owned by user
+
+---
+
+### `GET /api/history/sessions/:sessionId/audio/:recordingId`
+Stream a session recording as `audio/wav`.
+
+**Response `200`** — WAV binary stream  
+**Error `404`** — recording not found / file missing on disk
+
+---
+
+## User management (Tenant Admin)
+
+🔒 Requires `orgRole: tenant_admin` + `membershipStatus: active`. All queries are automatically scoped to the tenant admin's organization.
+
+### `GET /api/users`
+Paginated list of users.
+
+**Tenant admin:** members of their organization only.
+
+**Super admin:** all users in the system (including guests with no organization). Optional filters:
+- `organizationId` — limit to users with membership in that org
+- `status` — filter by membership status (`pending`, `active`, `suspended`, `rejected`)
+
+**Query params:** `?page=1&limit=20&status=active&organizationId=<orgId>`
+
+**Response `200` (tenant admin)** — one row per org member:
+```json
+{
+  "page": 1,
+  "limit": 20,
+  "total": 12,
+  "users": [
+    {
+      "id": "...",
+      "email": "alice@example.com",
+      "displayName": "Alice",
+      "defaultSourceLang": "en",
+      "defaultTargetLang": "es",
+      "orgRole": "member",
+      "status": "active",
+      "createdAt": "...",
+      "joinedAt": "..."
+    }
+  ]
+}
+```
+
+**Response `200` (super admin)** — each user includes all organization memberships:
+```json
+{
+  "page": 1,
+  "limit": 20,
+  "total": 42,
+  "users": [
+    {
+      "id": "...",
+      "email": "alice@example.com",
+      "displayName": "Alice",
+      "defaultSourceLang": "en",
+      "defaultTargetLang": "es",
+      "globalRole": null,
+      "createdAt": "...",
+      "memberships": [
+        {
+          "organizationId": "...",
+          "organizationName": "Acme Corp",
+          "organizationSlug": "acme-corp",
+          "orgRole": "member",
+          "status": "active",
+          "joinedAt": "..."
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+### `GET /api/users/:id`
+Single user by account ID.
+
+**Tenant admin:** user must belong to their organization.
+
+**Super admin:** any user (including guests with no memberships).
+
+**Response `200`** — user object (shape matches list entry for the caller's role)  
+**Error `404`** — user not found (super admin) or not in organization (tenant admin)
+
+---
+
+### `POST /api/users`
+Create a new user and add them to the organization as `active`.  
+If a user with that email already exists and is not yet in the org, they are added; if already in the org, `409` is returned.
+
+**Request body**
+```json
+{
+  "email": "bob@example.com",
+  "password": "min8chars",
+  "displayName": "Bob",
+  "orgRole": "member"   // optional, default: "member"; or "tenant_admin"
+}
+```
+
+**Response `201`** — user object  
+**Error `400`** — missing/invalid fields  
+**Error `409`** — user already in organization
+
+---
+
+### `PUT /api/users/:id/status`
+Change a user's membership status (approve, suspend, reject).
+
+**Request body**
+```json
+{ "status": "active" }
+```
+
+Valid values: `pending | active | suspended | rejected`
+
+**Response `200`** — updated user object  
+**Error `400`** — invalid status value  
+**Error `404`** — user not in organization
+
+---
+
+### `DELETE /api/users/:id`
+Soft-remove a user from the organization (sets status to `rejected`). The account and session history are preserved.
+
+**Response `200`**
+```json
+{ "ok": true }
+```
+
+**Error `400`** — cannot remove yourself  
+**Error `404`** — user not in organization
+
+---
+
+## Admin — Voice Provider Catalog (Super Admin)
+
+🔒 Requires `globalRole: super_admin`.
+
+### `GET /api/admin/voice-providers`
+List all voice providers. API keys are never returned.
+
+**Response `200`**
+```json
+{
+  "providers": [
+    {
+      "id": "...",
+      "name": "DeepL Production",
+      "type": "deepl",
+      "apiUrl": "https://api.deepl.com",
+      "isActive": true,
+      "hasApiKey": true,
+      "createdAt": "...",
+      "updatedAt": "..."
+    }
+  ]
+}
+```
+
+---
+
+### `POST /api/admin/voice-providers`
+Add a new voice provider to the global catalog.
+
+**Request body**
+```json
+{
+  "name": "DeepL Production",
+  "type": "deepl",
+  "apiUrl": "https://api.deepl.com",
+  "apiKey": "your-deepl-auth-key",
+  "isActive": true
+}
+```
+
+The `apiKey` is encrypted at rest using `ENCRYPTION_KEY` (falls back to `JWT_SECRET`).
+
+**Response `201`** — provider object (masked)  
+**Error `400`** — missing required fields
+
+---
+
+### `PUT /api/admin/voice-providers/:id`
+Update an existing provider. Pass `apiKey` only if rotating the key.
+
+**Request body** (all fields optional)
+```json
+{
+  "name": "DeepL EU",
+  "apiUrl": "https://api-free.deepl.com",
+  "apiKey": "new-key",
+  "isActive": true
+}
+```
+
+**Response `200`** — updated provider (masked)  
+**Error `404`** — provider not found
+
+---
+
+### `DELETE /api/admin/voice-providers/:id`
+Delete a provider. If the provider is currently assigned to any organization, it is **deactivated** instead of deleted, and `"deactivated": true` is returned.
+
+**Response `200`**
+```json
+{ "ok": true, "deactivated": true }
+```
+
+**Error `404`** — provider not found
+
+---
+
+## Admin — Organization Voice Providers (Tenant Admin)
+
+🔒 Requires `orgRole: tenant_admin` + `membershipStatus: active`.
+
+### `GET /api/admin/organization/voice-providers`
+List all globally active providers, annotated with this org's `enabled` and `isDefault` flags.
+
+**Response `200`**
+```json
+{
+  "providers": [
+    {
+      "id": "...",
+      "name": "DeepL Production",
+      "type": "deepl",
+      "apiUrl": "https://api.deepl.com",
+      "isActive": true,
+      "enabled": true,
+      "isDefault": true
+    }
+  ]
+}
+```
+
+---
+
+### `PUT /api/admin/organization/voice-providers`
+Replace the organization's provider selection. Exactly one enabled provider must be marked `isDefault: true`.
+
+**Request body**
+```json
+{
+  "providers": [
+    { "voiceProviderId": "<id>", "enabled": true,  "isDefault": true  },
+    { "voiceProviderId": "<id2>", "enabled": false, "isDefault": false }
+  ]
+}
+```
+
+**Response `200`** — list of org's active provider links  
+**Error `400`** — not exactly one default, missing array, or invalid provider IDs
+
+---
+
+## Admin — Organizations (Super Admin)
+
+🔒 Requires `globalRole: super_admin`.
+
+### `GET /api/admin/organizations`
+Paginated list of all organizations.
+
+**Query params:** `?page=1&limit=20`
+
+**Response `200`**
+```json
+{
+  "page": 1,
+  "limit": 20,
+  "total": 5,
+  "organizations": [
+    {
+      "id": "...",
+      "name": "Acme Corp",
+      "slug": "acme-corp",
+      "inviteCode": "a1b2c3d4e5f6g7h8",
+      "isActive": true,
+      "memberCount": 12,
+      "createdAt": "..."
+    }
+  ]
+}
+```
+
+---
+
+### `POST /api/admin/organizations`
+Create a new organization. Optionally create the first tenant admin in the same request.
+
+**Request body**
+```json
+{
+  "name": "Acme Corp",
+  "slug": "acme-corp",
+  "tenantAdminEmail": "admin@acme.com",
+  "tenantAdminPassword": "min8chars",
+  "tenantAdminDisplayName": "Acme Admin"
+}
+```
+
+`slug`, `tenantAdmin*` fields are optional. If `slug` is omitted, it is derived from `name`.  
+An `inviteCode` (16-char hex) is generated automatically.
+
+**Response `201`**
+```json
+{
+  "organization": {
+    "id": "...",
+    "name": "Acme Corp",
+    "slug": "acme-corp",
+    "inviteCode": "a1b2c3d4e5f6g7h8",
+    "isActive": true,
+    "createdAt": "..."
+  }
+}
+```
+
+**Error `400`** — missing name  
+**Error `409`** — slug already taken
+
+---
+
+### `PATCH /api/admin/organizations/:id`
+Update org name, active status, or rotate the invite code.
+
+**Request body** (all optional)
+```json
+{
+  "name": "New Name",
+  "isActive": false,
+  "rotateInviteCode": true
+}
+```
+
+**Response `200`** — updated organization  
+**Error `404`** — not found
+
+---
+
+## Admin — Analytics (Tenant Admin)
+
+🔒 Requires `orgRole: tenant_admin` + `membershipStatus: active`.
+
+### `GET /api/admin/analytics`
+Aggregated statistics for the tenant admin's organization.
+
+**Query params:** `?from=ISO-date&to=ISO-date` (default: last 30 days)
+
+**Response `200`**
+```json
+{
+  "from": "2026-05-05T00:00:00.000Z",
+  "to": "2026-06-04T14:00:00.000Z",
+  "sessionCount": 42,
+  "endedSessionCount": 38,
+  "totalDurationMs": 9720000,
+  "activeMembers": 8,
+  "pendingMembers": 2,
+  "transcriptSegmentCount": 1240,
+  "recordingCount": 84,
+  "recordingBytes": 157286400,
+  "languagePairs": {
+    "en->fr": 18,
+    "en->de": 12,
+    "fr->en": 12
+  },
+  "sessionsByDay": [
+    { "date": "2026-05-05", "count": 3 },
+    { "date": "2026-05-06", "count": 5 }
+  ]
+}
+```
+
+**Error `401`** — not authenticated  
+**Error `403`** — not a tenant admin, or pending/suspended membership
+
+---
+
+## Socket.IO (Realtime)
+
+Connect to the same host/port as the REST API. Optional handshake token:
+
+```js
+io(BASE_URL, { auth: { token: SOCKET_SECRET } })  // if SOCKET_SECRET is set
+```
+
+### Client → Server events
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `join_session` | `{ sessionId, userId, sourceLang, authToken? }` | Join a 2-person room. `authToken` is the user's JWT — enables org-scoped voice provider and durable history |
+| `audio_chunk` | `Buffer` (16 kHz s16le PCM) | Send microphone audio for translation |
+| `webrtc_signal` | `{ type, sdp?, candidate? }` | Relay SDP/ICE to peer |
+| `leave_session` | — | Leave the current room |
+
+### Server → Client events
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `session_joined` | `{ ok, sessionId, clientId, isInitiator, participantCount, partnerConnected, sourceLang, targetLang, deeplOk, deeplError }` | Ack for `join_session` |
+| `session_state` | `{ sessionId, participantCount, partnerConnected, partnerUserId }` | Broadcast on join/leave |
+| `peer_joined` | `{ peerId, userId, targetLang }` | Notifies first participant when partner connects |
+| `peer_left` | `{ peerId }` | Partner disconnected |
+| `self_transcript` | `{ transcript, isFinal }` | Your own speech transcribed |
+| `translation_result` | `{ translation, audioChunks?, audioContentType?, isFinal }` | Partner's translated speech + optional TTS audio |
+| `webrtc_signal` | `{ from, type, sdp?, candidate? }` | Relayed WebRTC signal from peer |
+| `error_message` | `{ message }` | Session or voice-provider error |
+
+---
+
+## Error format
+
+All error responses use a consistent JSON body:
+
+```json
+{ "error": "Human-readable message" }
+```
+
+## Rate limits
+
+| Scope | Limit |
+|-------|-------|
+| Global (all routes) | 120 req/min per IP |
+| `POST /api/sessions` | 10 req/min per IP |
+| `POST /api/auth/*` | 20 req/min per IP |
+| Admin routes | 60 req/min per IP |
+| Socket audio bytes | configurable `MAX_AUDIO_BYTES_PER_SEC` (default 160 000 B/s) |
+>>>>>>> Stashed changes

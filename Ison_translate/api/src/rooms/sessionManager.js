@@ -1,8 +1,12 @@
 import { randomUUID } from 'node:crypto'
 
-/** @typedef {{ socketId: string, userId: string, sourceLang: string, targetLang: string, dbSessionId?: string, participantDbId?: string, deeplClient?: import('../deepl/deeplVoiceClient.js').DeepLVoiceClient }} SessionClient */
+/** @typedef {{ socketId: string, userId: string, sourceLang: string, targetLang: string, organizationId?: string, persistHistory?: boolean, dbSessionId?: string, participantDbId?: string, deeplClient?: import('../deepl/deeplVoiceClient.js').DeepLVoiceClient }} SessionClient */
 
+<<<<<<< Updated upstream
 /** @typedef {{ id: string, clients: Map<string, SessionClient>, createdAt: number, organizationId?: string, voiceConfig?: import('../voice/providerResolver.js').VoiceConfig | null }} Session */
+=======
+/** @typedef {{ id: string, clients: Map<string, SessionClient>, createdAt: number, organizationId?: string }} Session */
+>>>>>>> Stashed changes
 
 /** @type {Map<string, Session>} */
 const sessions = new Map()
@@ -122,10 +126,15 @@ export function joinSession(sessionId, socketId, meta, io) {
     userId: meta.userId,
     sourceLang: mySourceLang,
     targetLang: myTargetLang,
+    ...(meta.organizationId ? { organizationId: meta.organizationId } : {}),
   }
 
   session.clients.set(key, entry)
   socketIndex.set(socketId, { sessionId, clientKey: key })
+
+  if (meta.organizationId && !session.organizationId) {
+    session.organizationId = meta.organizationId
+  }
 
   const peers = [...session.clients.values()].filter((c) => c.socketId !== socketId)
   const isInitiator = session.clients.size === 1

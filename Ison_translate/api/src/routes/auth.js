@@ -21,6 +21,19 @@ const authLimiter = rateLimit({
   message: { error: 'Too many requests. Please slow down.' },
 })
 
+<<<<<<< Updated upstream
+=======
+/**
+ * @param {import('@prisma/client').User & { orgId?: string, orgRole?: string, membershipStatus?: string }} user
+ */
+function safeUser(user) {
+  return buildAuthUser(user)
+}
+
+/**
+ * @param {import('@prisma/client').User} user
+ */
+>>>>>>> Stashed changes
 async function issueAuthResponse(user) {
   const promoted = await maybePromoteSuperAdmin(user)
   const claims = await loadMembershipClaims(promoted.id, promoted.globalRole)
@@ -36,7 +49,11 @@ async function issueAuthResponse(user) {
     orgRole: claims.orgRole ?? null,
     membershipStatus: claims.membershipStatus ?? null,
   }
+<<<<<<< Updated upstream
   return { token: signToken(tokenUser), user: buildAuthUser(tokenUser) }
+=======
+  return { token: signToken(tokenUser), user: safeUser(tokenUser) }
+>>>>>>> Stashed changes
 }
 
 router.post('/register', authLimiter, async (req, res, next) => {
@@ -73,6 +90,7 @@ router.post('/register', authLimiter, async (req, res, next) => {
     }
 
     let org = null
+<<<<<<< Updated upstream
     if (organizationSlug || inviteCode) {
       org = await resolveOrganization({
         slug: organizationSlug,
@@ -82,6 +100,13 @@ router.post('/register', authLimiter, async (req, res, next) => {
         res.status(400).json({ error: 'Organization not found or inactive' })
         return
       }
+=======
+    try {
+      org = await resolveOrganization({ organizationSlug, inviteCode })
+    } catch (err) {
+      res.status(400).json({ error: err instanceof Error ? err.message : 'Invalid organization' })
+      return
+>>>>>>> Stashed changes
     }
 
     const passwordHash = await hashPassword(password)
@@ -90,9 +115,21 @@ router.post('/register', authLimiter, async (req, res, next) => {
         email: email.toLowerCase().trim(),
         passwordHash,
         displayName: displayName.trim(),
+        ...(org
+          ? {
+              memberships: {
+                create: {
+                  organizationId: org.id,
+                  orgRole: 'member',
+                  status: 'pending',
+                },
+              },
+            }
+          : {}),
       },
     })
 
+<<<<<<< Updated upstream
     if (org) {
       await prisma.organizationmembership.create({
         data: {
@@ -105,6 +142,8 @@ router.post('/register', authLimiter, async (req, res, next) => {
       })
     }
 
+=======
+>>>>>>> Stashed changes
     const auth = await issueAuthResponse(user)
     res.status(201).json(auth)
   } catch (err) {
@@ -122,7 +161,7 @@ router.post('/login', authLimiter, async (req, res, next) => {
     }
 
     const prisma = getPrisma()
-    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } })
+    let user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } })
     if (!user) {
       res.status(401).json({ error: 'Invalid email or password' })
       return
@@ -134,6 +173,10 @@ router.post('/login', authLimiter, async (req, res, next) => {
       return
     }
 
+<<<<<<< Updated upstream
+=======
+    user = await maybePromoteSuperAdmin(user)
+>>>>>>> Stashed changes
     const auth = await issueAuthResponse(user)
     res.json(auth)
   } catch (err) {
@@ -149,6 +192,7 @@ router.get('/me', requireAuth, async (req, res, next) => {
       res.status(404).json({ error: 'User not found' })
       return
     }
+<<<<<<< Updated upstream
     const promoted = await maybePromoteSuperAdmin(user)
     const claims = await loadMembershipClaims(promoted.id, promoted.globalRole)
     res.json({
@@ -157,6 +201,16 @@ router.get('/me', requireAuth, async (req, res, next) => {
         orgId: claims.orgId,
         orgRole: claims.orgRole,
         membershipStatus: claims.membershipStatus,
+=======
+    const claims = await loadMembershipClaims(user.id, user.globalRole)
+    res.json({
+      user: safeUser({
+        ...user,
+        globalRole: user.globalRole ?? claims.globalRole ?? null,
+        orgId: claims.orgId ?? null,
+        orgRole: claims.orgRole ?? null,
+        membershipStatus: claims.membershipStatus ?? null,
+>>>>>>> Stashed changes
       }),
     })
   } catch (err) {
@@ -177,11 +231,20 @@ router.patch('/me/languages', requireAuth, async (req, res, next) => {
     })
     const claims = await loadMembershipClaims(user.id, user.globalRole)
     res.json({
+<<<<<<< Updated upstream
       user: buildAuthUser({
         ...user,
         orgId: claims.orgId,
         orgRole: claims.orgRole,
         membershipStatus: claims.membershipStatus,
+=======
+      user: safeUser({
+        ...user,
+        globalRole: user.globalRole ?? claims.globalRole ?? null,
+        orgId: claims.orgId ?? null,
+        orgRole: claims.orgRole ?? null,
+        membershipStatus: claims.membershipStatus ?? null,
+>>>>>>> Stashed changes
       }),
     })
   } catch (err) {

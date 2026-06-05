@@ -26,7 +26,11 @@ export function AppLayout() {
             color: 'var(--md-on-tertiary-container)',
           }}
         >
+<<<<<<< Updated upstream
           Your organization membership is pending approval. You can join sessions but history and admin features are unavailable until approved.
+=======
+          Your organization membership is pending approval. You can join sessions but history is unavailable until approved.
+>>>>>>> Stashed changes
         </div>
       )}
       <div className="flex min-h-0 flex-1">

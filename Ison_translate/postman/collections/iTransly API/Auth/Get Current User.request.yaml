@@ -1,0 +1,12 @@
+$kind: http-request
+name: Get Current User
+method: GET
+url: '{{baseUrl}}/api/auth/me'
+description: Returns the authenticated user's profile. Requires a valid Bearer token in `{{authToken}}`.
+order: 3000
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'
+examples: './.resources/Get Current User.resources/examples'

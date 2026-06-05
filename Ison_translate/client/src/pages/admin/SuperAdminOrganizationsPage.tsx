@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
+<<<<<<< Updated upstream
 import { AdminTable } from '../../components/admin/AdminTable'
 import { AdminViewToggle } from '../../components/admin/AdminViewToggle'
 import { OrgMembersModal } from '../../components/admin/OrgMembersModal'
 import { useAdminViewMode } from '../../components/admin/useAdminViewMode'
+=======
+>>>>>>> Stashed changes
 import {
   createOrganization,
   fetchOrganizations,
@@ -13,6 +16,7 @@ import {
 
 export function SuperAdminOrganizationsPage() {
   const { token } = useAuth()
+<<<<<<< Updated upstream
   const [viewMode, setViewMode] = useAdminViewMode('organizations')
   const [orgs, setOrgs] = useState<Organization[]>([])
   const [error, setError] = useState('')
@@ -36,10 +40,29 @@ export function SuperAdminOrganizationsPage() {
   }
 
   useEffect(() => { void load() }, [token])
+=======
+  const [orgs, setOrgs] = useState<Organization[]>([])
+  const [name, setName] = useState('')
+  const [slug, setSlug] = useState('')
+  const [error, setError] = useState('')
+
+  async function load() {
+    if (!token) return
+    const data = await fetchOrganizations(token)
+    setOrgs(data.organizations)
+  }
+
+  useEffect(() => {
+    void load().catch((err) =>
+      setError(err instanceof Error ? err.message : 'Failed to load organizations'),
+    )
+  }, [token])
+>>>>>>> Stashed changes
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     if (!token) return
+<<<<<<< Updated upstream
     try {
       const body: Parameters<typeof createOrganization>[1] = {
         name,
@@ -61,12 +84,20 @@ export function SuperAdminOrganizationsPage() {
       setAdminEmail('')
       setAdminPassword('')
       setAdminDisplayName('')
+=======
+    setError('')
+    try {
+      await createOrganization(token, { name, slug: slug || undefined })
+      setName('')
+      setSlug('')
+>>>>>>> Stashed changes
       await load()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create organization')
     }
   }
 
+<<<<<<< Updated upstream
   async function rotateInvite(id: string) {
     if (!token) return
     try {
@@ -101,10 +132,17 @@ export function SuperAdminOrganizationsPage() {
         </button>
       </div>
     )
+=======
+  async function rotateCode(id: string) {
+    if (!token) return
+    await patchOrganization(token, id, { rotateInviteCode: true })
+    await load()
+>>>>>>> Stashed changes
   }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-auto p-6">
+<<<<<<< Updated upstream
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="mb-1 text-xl font-semibold" style={{ color: 'var(--md-on-surface)' }}>Organizations</h1>
@@ -213,6 +251,45 @@ export function SuperAdminOrganizationsPage() {
           onChanged={() => void load()}
         />
       )}
+=======
+      <h1 className="text-xl font-semibold" style={{ color: 'var(--md-on-surface)' }}>
+        Organizations
+      </h1>
+      {error && <p className="mt-2 text-sm" style={{ color: 'var(--md-error)' }}>{error}</p>}
+
+      <form onSubmit={handleCreate} className="mt-6 grid max-w-xl gap-3">
+        <input className="md-field-input" placeholder="Organization name" value={name} onChange={(e) => setName(e.target.value)} required />
+        <input className="md-field-input" placeholder="Slug (optional)" value={slug} onChange={(e) => setSlug(e.target.value)} />
+        <button type="submit" className="md-btn md-btn-filled w-fit">Create organization</button>
+      </form>
+
+      <table className="mt-8 w-full max-w-4xl text-sm">
+        <thead>
+          <tr style={{ color: 'var(--md-on-surface-variant)', textAlign: 'left' }}>
+            <th className="pb-2">Name</th>
+            <th className="pb-2">Slug</th>
+            <th className="pb-2">Invite code</th>
+            <th className="pb-2">Members</th>
+            <th className="pb-2">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {orgs.map((o) => (
+            <tr key={o.id} style={{ borderTop: '1px solid var(--md-outline-variant)' }}>
+              <td className="py-2">{o.name}</td>
+              <td className="py-2 font-mono text-xs">{o.slug}</td>
+              <td className="py-2 font-mono text-xs">{o.inviteCode}</td>
+              <td className="py-2">{o.memberCount ?? 0}</td>
+              <td className="py-2">
+                <button type="button" className="md-btn md-btn-outlined text-xs" onClick={() => void rotateCode(o.id)}>
+                  Rotate invite code
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+>>>>>>> Stashed changes
     </div>
   )
 }

@@ -337,6 +337,7 @@ export function getOrCreateStream(params) {
   if (stream) {
     stream.onEvent = params.onEvent
     stream.onClientError = params.onClientError ?? null
+    stream.voiceConfig = params.voiceConfig
     return stream
   }
 

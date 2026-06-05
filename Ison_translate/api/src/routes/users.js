@@ -54,7 +54,11 @@ function superAdminUser(user) {
     defaultTargetLang: user.defaultTargetLang,
     globalRole: user.globalRole ?? null,
     createdAt: user.createdAt,
+<<<<<<< Updated upstream
     memberships: (user.organizationmembership ?? []).map(membershipEntry),
+=======
+    memberships: (user.memberships ?? []).map(membershipEntry),
+>>>>>>> Stashed changes
   }
 }
 
@@ -80,7 +84,11 @@ router.get('/', async (req, res, next) => {
 
       const where = organizationId
         ? {
+<<<<<<< Updated upstream
             organizationmembership: {
+=======
+            memberships: {
+>>>>>>> Stashed changes
               some: {
                 organizationId,
                 ...(status ? { status } : {}),
@@ -88,7 +96,11 @@ router.get('/', async (req, res, next) => {
             },
           }
         : status
+<<<<<<< Updated upstream
           ? { organizationmembership: { some: { status } } }
+=======
+          ? { memberships: { some: { status } } }
+>>>>>>> Stashed changes
           : {}
 
       const [items, total] = await Promise.all([
@@ -98,7 +110,11 @@ router.get('/', async (req, res, next) => {
           take: limit,
           orderBy: { createdAt: 'desc' },
           include: {
+<<<<<<< Updated upstream
             organizationmembership: {
+=======
+            memberships: {
+>>>>>>> Stashed changes
               include: { organization: true },
               ...(organizationId || status
                 ? {
@@ -114,7 +130,16 @@ router.get('/', async (req, res, next) => {
         prisma.user.count({ where }),
       ])
 
+<<<<<<< Updated upstream
       res.json({ page, limit, total, users: items.map(superAdminUser) })
+=======
+      res.json({
+        page,
+        limit,
+        total,
+        users: items.map(superAdminUser),
+      })
+>>>>>>> Stashed changes
       return
     }
 
@@ -124,20 +149,42 @@ router.get('/', async (req, res, next) => {
       return
     }
 
+<<<<<<< Updated upstream
     const where = { organizationId: orgId, ...(status ? { status } : {}) }
 
     const [items, total] = await Promise.all([
       prisma.organizationmembership.findMany({
+=======
+    const where = {
+      organizationId: orgId,
+      ...(status ? { status } : {}),
+    }
+
+    const [items, total] = await Promise.all([
+      prisma.organizationMembership.findMany({
+>>>>>>> Stashed changes
         where,
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
         include: { user: true },
       }),
+<<<<<<< Updated upstream
       prisma.organizationmembership.count({ where }),
     ])
 
     res.json({ page, limit, total, users: items.map(membershipUser) })
+=======
+      prisma.organizationMembership.count({ where }),
+    ])
+
+    res.json({
+      page,
+      limit,
+      total,
+      users: items.map(membershipUser),
+    })
+>>>>>>> Stashed changes
   } catch (err) {
     next(err)
   }
@@ -151,7 +198,11 @@ router.get('/:id', async (req, res, next) => {
       const user = await prisma.user.findUnique({
         where: { id: req.params.id },
         include: {
+<<<<<<< Updated upstream
           organizationmembership: {
+=======
+          memberships: {
+>>>>>>> Stashed changes
             include: { organization: true },
             orderBy: { createdAt: 'desc' },
           },
@@ -170,7 +221,11 @@ router.get('/:id', async (req, res, next) => {
       res.status(403).json({ error: 'Organization context required' })
       return
     }
+<<<<<<< Updated upstream
     const membership = await prisma.organizationmembership.findFirst({
+=======
+    const membership = await prisma.organizationMembership.findFirst({
+>>>>>>> Stashed changes
       where: { organizationId: orgId, userId: req.params.id },
       include: { user: true },
     })
@@ -211,15 +266,29 @@ router.post('/', async (req, res, next) => {
 
     const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase() } })
     if (existing) {
+<<<<<<< Updated upstream
       const dup = await prisma.organizationmembership.findUnique({
+=======
+      const dup = await prisma.organizationMembership.findUnique({
+>>>>>>> Stashed changes
         where: { userId_organizationId: { userId: existing.id, organizationId: orgId } },
       })
       if (dup) {
         res.status(409).json({ error: 'User is already in this organization' })
         return
       }
+<<<<<<< Updated upstream
       const membership = await prisma.organizationmembership.create({
         data: { userId: existing.id, organizationId: orgId, orgRole: role, status: 'active' },
+=======
+      const membership = await prisma.organizationMembership.create({
+        data: {
+          userId: existing.id,
+          organizationId: orgId,
+          orgRole: role,
+          status: 'active',
+        },
+>>>>>>> Stashed changes
         include: { user: true },
       })
       res.status(201).json({ user: membershipUser(membership) })
@@ -234,8 +303,18 @@ router.post('/', async (req, res, next) => {
         displayName: displayName.trim(),
       },
     })
+<<<<<<< Updated upstream
     const membership = await prisma.organizationmembership.create({
       data: { userId: newUser.id, organizationId: orgId, orgRole: role, status: 'active' },
+=======
+    const membership = await prisma.organizationMembership.create({
+      data: {
+        userId: newUser.id,
+        organizationId: orgId,
+        orgRole: role,
+        status: 'active',
+      },
+>>>>>>> Stashed changes
       include: { user: true },
     })
 
@@ -260,7 +339,11 @@ router.put('/:id/status', async (req, res, next) => {
     }
 
     const prisma = getPrisma()
+<<<<<<< Updated upstream
     const membership = await prisma.organizationmembership.findFirst({
+=======
+    const membership = await prisma.organizationMembership.findFirst({
+>>>>>>> Stashed changes
       where: { organizationId: orgId, userId: req.params.id },
       include: { user: true },
     })
@@ -269,7 +352,11 @@ router.put('/:id/status', async (req, res, next) => {
       return
     }
 
+<<<<<<< Updated upstream
     const updated = await prisma.organizationmembership.update({
+=======
+    const updated = await prisma.organizationMembership.update({
+>>>>>>> Stashed changes
       where: { id: membership.id },
       data: { status },
       include: { user: true },
@@ -294,7 +381,11 @@ router.delete('/:id', async (req, res, next) => {
     }
 
     const prisma = getPrisma()
+<<<<<<< Updated upstream
     const membership = await prisma.organizationmembership.findFirst({
+=======
+    const membership = await prisma.organizationMembership.findFirst({
+>>>>>>> Stashed changes
       where: { organizationId: orgId, userId: req.params.id },
     })
     if (!membership) {
@@ -302,7 +393,11 @@ router.delete('/:id', async (req, res, next) => {
       return
     }
 
+<<<<<<< Updated upstream
     await prisma.organizationmembership.update({
+=======
+    await prisma.organizationMembership.update({
+>>>>>>> Stashed changes
       where: { id: membership.id },
       data: { status: 'rejected' },
     })

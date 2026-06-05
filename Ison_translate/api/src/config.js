@@ -26,7 +26,20 @@ export const config = {
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   encryptionKey: process.env.ENCRYPTION_KEY || '',
   superAdminEmail: process.env.SUPER_ADMIN_EMAIL || '',
+<<<<<<< Updated upstream
   clientOriginPrimary: (process.env.CLIENT_ORIGIN || 'http://localhost:5173')
     .split(',')[0]
     .trim(),
+=======
+  /** First origin used for session invite links */
+  clientOriginPrimary: (process.env.CLIENT_ORIGIN || 'http://localhost:5173')
+    .split(',')[0]
+    .trim(),
+}
+
+export function assertDeepLConfigured() {
+  if (!config.deeplAuthKey) {
+    throw new Error('DEEPL_AUTH_KEY is not set. Add it to api/.env')
+  }
+>>>>>>> Stashed changes
 }

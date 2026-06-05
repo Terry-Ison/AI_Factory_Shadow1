@@ -70,6 +70,21 @@ export function SessionBanner({
     }
   }
 
+  async function copyInviteLink() {
+    if (!sessionId) return
+    try {
+      const { inviteUrl } = await fetchSessionInvite(sessionId)
+      await navigator.clipboard.writeText(inviteUrl)
+      setLinkCopied(true)
+      setTimeout(() => setLinkCopied(false), 1800)
+    } catch {
+      const fallback = `${window.location.origin}/join/${sessionId}`
+      await navigator.clipboard.writeText(fallback)
+      setLinkCopied(true)
+      setTimeout(() => setLinkCopied(false), 1800)
+    }
+  }
+
   return (
     <div
       className="sticky top-0 z-10 shrink-0"
@@ -116,12 +131,23 @@ export function SessionBanner({
               >
                 <Link2 size={14} />
               </button>
+<<<<<<< Updated upstream
               {(copied || linkCopied) && (
                 <span
                   className="text-xs"
                   style={{ color: 'var(--md-primary)' }}
                 >
                   {linkCopied ? 'Link copied' : 'Copied'}
+=======
+              {copied && !linkCopied && (
+                <span className="text-xs" style={{ color: 'var(--md-primary)' }}>
+                  ID copied
+                </span>
+              )}
+              {linkCopied && (
+                <span className="text-xs" style={{ color: 'var(--md-primary)' }}>
+                  Link copied
+>>>>>>> Stashed changes
                 </span>
               )}
             </>

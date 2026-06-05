@@ -1,0 +1,24 @@
+$kind: http-example
+name: 200 OK
+request:
+  method: PATCH
+  url: '{{baseUrl}}/api/auth/me/languages'
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "user": {
+          "id": "abc123",
+          "email": "user@example.com",
+          "displayName": "Test User",
+          "defaultSourceLang": "en",
+          "defaultTargetLang": "fr",
+          "createdAt": "2024-01-15T10:00:00.000Z"
+        }
+      }

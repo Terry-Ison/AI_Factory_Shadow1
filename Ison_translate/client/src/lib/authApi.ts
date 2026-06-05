@@ -93,3 +93,24 @@ export async function updateLanguages(
     body: JSON.stringify({ defaultSourceLang, defaultTargetLang }),
   })
 }
+
+export function isSuperAdmin(user: AuthUser | null): boolean {
+  return user?.globalRole === 'super_admin'
+}
+
+export function isTenantAdmin(user: AuthUser | null): boolean {
+  return (
+    user?.globalRole === 'super_admin' ||
+    (user?.orgRole === 'tenant_admin' && user?.membershipStatus === 'active')
+  )
+}
+
+export function isPendingMember(user: AuthUser | null): boolean {
+  return Boolean(user?.orgId && user?.membershipStatus === 'pending')
+}
+
+export function canAccessHistory(user: AuthUser | null): boolean {
+  if (!user) return false
+  if (!user.orgId) return true
+  return user.membershipStatus === 'active'
+}

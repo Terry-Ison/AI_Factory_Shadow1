@@ -1,0 +1,25 @@
+$kind: http-example
+name: 201 Created
+request:
+  method: POST
+  url: '{{baseUrl}}/api/auth/register'
+response:
+  statusCode: 201
+  statusText: Created
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImFiYzEyMyIsImVtYWlsIjoidXNlckBleGFtcGxlLmNvbSIsImlhdCI6MTcwMDAwMDAwMCwiZXhwIjoxNzAwMDg2NDAwfQ.signature",
+        "user": {
+          "id": "abc123",
+          "email": "user@example.com",
+          "displayName": "Test User",
+          "defaultSourceLang": "en",
+          "defaultTargetLang": "fr",
+          "createdAt": "2024-01-15T10:00:00.000Z"
+        }
+      }

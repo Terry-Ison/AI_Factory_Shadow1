@@ -1,0 +1,7 @@
+$kind: http-request
+name: Get Supported Languages
+method: GET
+url: '{{baseUrl}}/api/languages'
+description: Returns the list of languages supported by the DeepL translation engine.
+order: 3000
+examples: './.resources/Get Supported Languages.resources/examples'

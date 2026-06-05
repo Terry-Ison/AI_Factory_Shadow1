@@ -138,7 +138,16 @@ function SignUpView({
   onSuccess,
   onSignIn,
 }: {
+<<<<<<< Updated upstream
   register: (email: string, password: string, displayName: string, options?: RegisterOptions) => Promise<void>
+=======
+  register: (
+    email: string,
+    password: string,
+    displayName: string,
+    options?: { organizationSlug?: string; inviteCode?: string },
+  ) => Promise<void>
+>>>>>>> Stashed changes
   onSuccess: () => void
   onSignIn: () => void
 }) {
@@ -157,15 +166,26 @@ function SignUpView({
     if (password !== confirm) { setError('Passwords do not match'); return }
     if (password.length < 8) { setError('Password must be at least 8 characters'); return }
     if (organizationSlug.trim() && inviteCode.trim()) {
+<<<<<<< Updated upstream
       setError('Provide either organization slug or invite code, not both')
+=======
+      setError('Use organization slug or invite code, not both')
+>>>>>>> Stashed changes
       return
     }
     setLoading(true)
     try {
+<<<<<<< Updated upstream
       const options: RegisterOptions = {}
       if (organizationSlug.trim()) options.organizationSlug = organizationSlug.trim()
       if (inviteCode.trim()) options.inviteCode = inviteCode.trim()
       await register(email, password, displayName, options)
+=======
+      await register(email, password, displayName, {
+        ...(organizationSlug.trim() ? { organizationSlug: organizationSlug.trim() } : {}),
+        ...(inviteCode.trim() ? { inviteCode: inviteCode.trim() } : {}),
+      })
+>>>>>>> Stashed changes
       onSuccess()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed')
@@ -261,6 +281,35 @@ function GuestView({
 }
 
 /* ─── Shared primitives ──────────────────────────────────────── */
+
+function OptionalField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+  placeholder?: string
+}) {
+  const id = `field-${label.toLowerCase().replace(/\s+/g, '-')}`
+  return (
+    <div className="md-field">
+      <label className="md-field-label" htmlFor={id}>
+        {label}
+      </label>
+      <input
+        id={id}
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="md-field-input"
+      />
+    </div>
+  )
+}
 
 function Field({
   label,

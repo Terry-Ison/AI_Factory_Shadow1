@@ -1,0 +1,12 @@
+$kind: http-request
+name: Get Session Details
+method: GET
+url: '{{baseUrl}}/api/history/sessions/{{sessionId}}'
+description: Returns full details for a specific past session, including transcripts and recordings.
+order: 2000
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'
+examples: './.resources/Get Session Details.resources/examples'

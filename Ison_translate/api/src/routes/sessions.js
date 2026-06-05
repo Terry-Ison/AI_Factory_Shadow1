@@ -1,8 +1,12 @@
 import { Router } from 'express'
 import rateLimit from 'express-rate-limit'
+import { optionalAuth } from '../middleware/requireAuth.js'
 import { createPendingSession, getPrisma } from '../persistence/index.js'
 import { config } from '../config.js'
+<<<<<<< Updated upstream
 import { optionalAuth } from '../middleware/requireAuth.js'
+=======
+>>>>>>> Stashed changes
 import { resolveVoiceConfig } from '../voice/providerResolver.js'
 import {
   createSession,
@@ -34,9 +38,19 @@ router.post('/sessions', sessionCreateLimiter, async (_req, res) => {
 })
 
 router.get('/languages', optionalAuth, async (req, res) => {
+<<<<<<< Updated upstream
   const voiceConfig = await resolveVoiceConfig(req.user?.orgId)
   if (!voiceConfig?.apiKey) {
     res.status(503).json({ error: 'No voice provider configured' })
+=======
+  const orgId = req.user?.orgId ?? null
+  const voiceConfig = await resolveVoiceConfig(orgId)
+  const apiKey = voiceConfig?.apiKey
+  const apiUrl = voiceConfig?.apiUrl ?? config.deeplApiUrl
+
+  if (!apiKey) {
+    res.status(503).json({ error: 'Voice provider is not configured' })
+>>>>>>> Stashed changes
     return
   }
 
@@ -49,8 +63,13 @@ router.get('/languages', optionalAuth, async (req, res) => {
   }
 
   try {
+<<<<<<< Updated upstream
     const response = await fetch(`${voiceConfig.apiUrl}/v3/languages?resource=voice`, {
       headers: { Authorization: `DeepL-Auth-Key ${voiceConfig.apiKey}` },
+=======
+    const response = await fetch(`${apiUrl}/v3/languages?resource=voice`, {
+      headers: { Authorization: `DeepL-Auth-Key ${apiKey}` },
+>>>>>>> Stashed changes
       signal: AbortSignal.timeout(8_000),
     })
 

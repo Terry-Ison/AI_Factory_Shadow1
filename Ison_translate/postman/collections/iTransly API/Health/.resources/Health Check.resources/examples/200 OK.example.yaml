@@ -1,0 +1,23 @@
+$kind: http-example
+name: 200 OK
+request:
+  method: GET
+  url: '{{baseUrl}}/health'
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "ok": true,
+        "databaseConfigured": true,
+        "databaseOk": true,
+        "databaseError": null,
+        "deeplConfigured": true,
+        "deeplOk": true,
+        "deeplError": null
+      }

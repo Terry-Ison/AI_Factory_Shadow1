@@ -48,13 +48,25 @@ export function registerSocketHandlers(io) {
         // Prefer stable account id when a valid JWT is supplied
         let accountUserId = null
         let displayName = null
+<<<<<<< Updated upstream
         let organizationId = undefined
+=======
+        let organizationId = null
+        let membershipStatus = null
+>>>>>>> Stashed changes
         if (payload?.authToken) {
           const claims = verifyToken(payload.authToken)
           if (claims) {
             accountUserId = claims.sub
             displayName = claims.displayName
+<<<<<<< Updated upstream
             if (claims.orgId) organizationId = claims.orgId
+=======
+            membershipStatus = claims.membershipStatus ?? null
+            if (claims.orgId && claims.membershipStatus === 'active') {
+              organizationId = claims.orgId
+            }
+>>>>>>> Stashed changes
           }
         }
         const userId = accountUserId ?? String(payload?.userId ?? socket.id).trim()
@@ -67,7 +79,11 @@ export function registerSocketHandlers(io) {
         const result = joinSession(
           sessionId,
           socket.id,
+<<<<<<< Updated upstream
           { userId, sourceLang, organizationId },
+=======
+          { userId, sourceLang, organizationId: organizationId ?? undefined },
+>>>>>>> Stashed changes
           io,
         )
 
@@ -113,9 +129,15 @@ export function registerSocketHandlers(io) {
           })
         }
 
+<<<<<<< Updated upstream
         if (result.peer && voiceConfig) {
           void preconnectDeepL(io, result.sessionId, socket.id, voiceConfig)
           void preconnectDeepL(io, result.sessionId, result.peer.socketId, voiceConfig)
+=======
+        if (result.peer) {
+          void preconnectDeepL(io, result.sessionId, socket.id)
+          void preconnectDeepL(io, result.sessionId, result.peer.socketId)
+>>>>>>> Stashed changes
         }
 
         if (!deepl.checked) {
@@ -130,7 +152,12 @@ export function registerSocketHandlers(io) {
           isInitiator: result.isInitiator,
           accountUserId,
           displayName,
+<<<<<<< Updated upstream
           organizationId,
+=======
+          organizationId: organizationId ?? undefined,
+          membershipStatus: membershipStatus ?? undefined,
+>>>>>>> Stashed changes
         })
       } catch (err) {
         ack?.({
@@ -157,6 +184,7 @@ export function registerSocketHandlers(io) {
         }
 
         const { session } = ctx
+<<<<<<< Updated upstream
         let voiceConfig = session.voiceConfig
         if (!voiceConfig) {
           voiceConfig = await resolveVoiceConfig(session.organizationId)
@@ -175,6 +203,18 @@ export function registerSocketHandlers(io) {
         if (!status.checked) {
           void verifyDeepLAccess(voiceConfig)
         } else if (!status.ok) {
+=======
+        const voiceConfig = await resolveVoiceConfig(session.organizationId)
+        if (!voiceConfig?.apiKey) {
+          emitError(socket, 'Voice provider is not configured for this session')
+          return
+        }
+
+        const status = getDeepLStatus()
+        if (!status.checked) {
+          void verifyDeepLAccess()
+        } else if (!status.ok && !session.organizationId) {
+>>>>>>> Stashed changes
           emitError(socket, status.error ?? 'DeepL is not available')
           return
         }
@@ -248,6 +288,7 @@ function preconnectDeepL(io, sessionId, socketId, voiceConfig) {
   const peer = getPeer(session, socketId)
   if (!speaker || !peer) return
 
+<<<<<<< Updated upstream
   const stream = getOrCreateStream({
     sessionId,
     socketId,
@@ -261,9 +302,28 @@ function preconnectDeepL(io, sessionId, socketId, voiceConfig) {
       emitError(io.to(socketId), message)
     },
   })
+=======
+  void resolveVoiceConfig(session.organizationId).then((voiceConfig) => {
+    if (!voiceConfig?.apiKey) return
+>>>>>>> Stashed changes
 
-  void stream.ensureConnected().catch((err) => {
-    emitError(io.to(socketId), err.message)
+    const stream = getOrCreateStream({
+      sessionId,
+      socketId,
+      sourceLang: speaker.sourceLang,
+      targetLang: speaker.targetLang,
+      voiceConfig,
+      onEvent: (event) => {
+        handleDeepLEvent(io, socketId, peer.client.socketId, event)
+      },
+      onClientError: (message) => {
+        emitError(io.to(socketId), message)
+      },
+    })
+
+    void stream.ensureConnected().catch((err) => {
+      emitError(io.to(socketId), err.message)
+    })
   })
 }
 
@@ -281,6 +341,19 @@ function broadcastSessionState(io, sessionId) {
       partnerUserId: peer?.userId ?? null,
     })
   }
+}
+
+function shouldPersistHistory(meta) {
+  if (!meta.accountUserId) return false
+  if (meta.membershipStatus && meta.membershipStatus !== 'active') return false
+  return true
+}
+
+/**
+ * @param {import('../rooms/sessionManager.js').SessionClient | null | undefined} client
+ */
+function clientCanPersist(client) {
+  return Boolean(client?.dbSessionId && client?.participantDbId && client?.persistHistory)
 }
 
 function emitError(target, message) {
@@ -312,7 +385,7 @@ function handleDeepLEvent(io, speakerSocketId, partnerSocketId, event) {
       isFinal: Boolean(concluded),
     })
 
-    if (speaker?.dbSessionId) {
+    if (clientCanPersist(speaker)) {
       void appendTranscript({
         sessionDbId: speaker.dbSessionId,
         participantDbId: speaker.participantDbId,
@@ -335,7 +408,7 @@ function handleDeepLEvent(io, speakerSocketId, partnerSocketId, event) {
       isFinal: Boolean(concluded),
     })
 
-    if (speaker?.dbSessionId && partner?.client) {
+    if (clientCanPersist(speaker) && partner?.client) {
       void appendTranscript({
         sessionDbId: speaker.dbSessionId,
         participantDbId: partner.client.participantDbId,
@@ -368,9 +441,13 @@ function handleDeepLEvent(io, speakerSocketId, partnerSocketId, event) {
  * @param {import('socket.io').Socket} socket
  */
 async function persistParticipantJoin(socketId, sessionSlug, meta) {
+<<<<<<< Updated upstream
   const dbSession = await ensureSession(sessionSlug, {
     organizationId: meta.organizationId,
   })
+=======
+  const dbSession = await ensureSession(sessionSlug, meta.organizationId ?? null)
+>>>>>>> Stashed changes
   if (!dbSession) return
 
   const participant = await addParticipant({
@@ -392,6 +469,9 @@ async function persistParticipantJoin(socketId, sessionSlug, meta) {
 
   client.dbSessionId = dbSession.id
   client.participantDbId = participant.id
+  client.persistHistory = shouldPersistHistory(meta)
+
+  if (!client.persistHistory) return
 
   await openParticipantRecordings({
     socketId,

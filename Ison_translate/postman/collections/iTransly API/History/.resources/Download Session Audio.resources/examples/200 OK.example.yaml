@@ -1,0 +1,16 @@
+$kind: http-example
+name: 200 OK
+request:
+  method: GET
+  url: '{{baseUrl}}/api/history/sessions/{{sessionId}}/audio/{{recordingId}}'
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    - key: Content-Type
+      value: audio/wav
+    - key: Content-Disposition
+      value: 'attachment; filename="recording_rec_001.wav"'
+  body:
+    type: text
+    content: (binary audio/wav file content)

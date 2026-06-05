@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import {
   canAccessHistory as checkCanAccessHistory,
@@ -5,6 +6,14 @@ import {
   isPendingMember as checkIsPending,
   isSuperAdmin as checkIsSuperAdmin,
   isTenantAdmin as checkIsTenantAdmin,
+=======
+import { createContext, useCallback, useContext, useState } from 'react'
+import {
+  canAccessHistory,
+  isPendingMember,
+  isSuperAdmin,
+  isTenantAdmin,
+>>>>>>> Stashed changes
   login as apiLogin,
   register as apiRegister,
   type AuthUser,
@@ -26,12 +35,25 @@ type AuthState = {
 
 type AuthContextValue = AuthState & {
   login: (email: string, password: string) => Promise<void>
+<<<<<<< Updated upstream
   register: (email: string, password: string, displayName: string, options?: RegisterOptions) => Promise<void>
+=======
+  register: (
+    email: string,
+    password: string,
+    displayName: string,
+    options?: RegisterOptions,
+  ) => Promise<void>
+>>>>>>> Stashed changes
   logout: () => void
   setGuestSession: (sessionId: string) => void
   setPendingSession: (sessionId: string) => void
   setLanguages: (source: string, target: string) => void
   clearPendingSession: () => void
+  isSuperAdmin: boolean
+  isTenantAdmin: boolean
+  isPending: boolean
+  canAccessHistory: boolean
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -40,6 +62,7 @@ const TOKEN_KEY = 'transly_token'
 const USER_KEY = 'transly_user'
 const GUEST_SESSION_KEY = 'transly_guest_session'
 
+<<<<<<< Updated upstream
 function deriveFlags(user: AuthUser | null) {
   return {
     isSuperAdmin: checkIsSuperAdmin(user),
@@ -84,14 +107,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isPending: false,
         canAccessHistory: false,
       }
+=======
+function loadInitialState(): AuthState {
+  try {
+    const token = localStorage.getItem(TOKEN_KEY)
+    const user = JSON.parse(localStorage.getItem(USER_KEY) ?? 'null') as AuthUser | null
+    const guestSessionId = sessionStorage.getItem(GUEST_SESSION_KEY)
+    const isGuest = !user && !!guestSessionId
+    const src = user?.defaultSourceLang ?? 'en'
+    const tgt = user?.defaultTargetLang ?? 'es'
+    return {
+      user,
+      token,
+      isGuest,
+      pendingSessionId: guestSessionId,
+      sourceLang: src,
+      targetLang: tgt,
+      isLoading: false,
+>>>>>>> Stashed changes
     }
-  })
+  } catch {
+    return {
+      user: null,
+      token: null,
+      isGuest: false,
+      pendingSessionId: null,
+      sourceLang: 'en',
+      targetLang: 'es',
+      isLoading: false,
+    }
+  }
+}
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [state, setState] = useState<AuthState>(loadInitialState)
 
   const persist = useCallback((token: string, user: AuthUser) => {
     localStorage.setItem(TOKEN_KEY, token)
     localStorage.setItem(USER_KEY, JSON.stringify(user))
   }, [])
 
+<<<<<<< Updated upstream
   useEffect(() => {
     const token = state.token
     if (!token || state.isGuest) return
@@ -113,6 +169,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => { cancelled = true }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps -- refresh once on mount
 
+=======
+>>>>>>> Stashed changes
   const applyAuth = useCallback(
     (token: string, user: AuthUser) => {
       persist(token, user)
@@ -135,7 +193,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   )
 
   const register = useCallback(
+<<<<<<< Updated upstream
     async (email: string, password: string, displayName: string, options: RegisterOptions = {}) => {
+=======
+    async (
+      email: string,
+      password: string,
+      displayName: string,
+      options: RegisterOptions = {},
+    ) => {
+>>>>>>> Stashed changes
       const { token, user } = await apiRegister(email, password, displayName, options)
       applyAuth(token, user)
     },
@@ -189,9 +256,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState((s) => ({ ...s, pendingSessionId: null }))
   }, [])
 
+  const user = state.user
+
   return (
     <AuthContext.Provider
+<<<<<<< Updated upstream
       value={{ ...state, login, register, logout, setGuestSession, setPendingSession, setLanguages, clearPendingSession }}
+=======
+      value={{
+        ...state,
+        login,
+        register,
+        logout,
+        setGuestSession,
+        setLanguages,
+        clearPendingSession,
+        isSuperAdmin: isSuperAdmin(user),
+        isTenantAdmin: isTenantAdmin(user),
+        isPending: isPendingMember(user),
+        canAccessHistory: canAccessHistory(user),
+      }}
+>>>>>>> Stashed changes
     >
       {children}
     </AuthContext.Provider>

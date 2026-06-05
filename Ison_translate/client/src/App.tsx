@@ -4,7 +4,10 @@ import { ThemeProvider } from './context/ThemeContext'
 import { SuperAdminLayout, TenantAdminLayout } from './layouts/AdminLayout'
 import { AppLayout } from './layouts/AppLayout'
 import { SuperAdminOrganizationsPage } from './pages/admin/SuperAdminOrganizationsPage'
+<<<<<<< Updated upstream
 import { SuperAdminUsersPage } from './pages/admin/SuperAdminUsersPage'
+=======
+>>>>>>> Stashed changes
 import { SuperAdminVoiceProvidersPage } from './pages/admin/SuperAdminVoiceProvidersPage'
 import { TenantAdminAnalyticsPage } from './pages/admin/TenantAdminAnalyticsPage'
 import { TenantAdminUsersPage } from './pages/admin/TenantAdminUsersPage'
@@ -69,7 +72,10 @@ function AppRoutes() {
         <Route path="super-admin" element={<SuperAdminLayout />}>
           <Route index element={<Navigate to="organizations" replace />} />
           <Route path="organizations" element={<SuperAdminOrganizationsPage />} />
+<<<<<<< Updated upstream
           <Route path="users" element={<SuperAdminUsersPage />} />
+=======
+>>>>>>> Stashed changes
           <Route path="voice-providers" element={<SuperAdminVoiceProvidersPage />} />
         </Route>
       </Route>

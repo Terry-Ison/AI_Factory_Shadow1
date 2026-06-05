@@ -1,0 +1,7 @@
+$kind: http-request
+name: Get Session
+method: GET
+url: '{{baseUrl}}/api/sessions/{{sessionId}}'
+description: Returns the current status of a session by its ID.
+order: 2000
+examples: './.resources/Get Session.resources/examples'

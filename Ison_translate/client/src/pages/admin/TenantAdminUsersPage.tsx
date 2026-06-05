@@ -8,8 +8,11 @@ import {
   type OrgUser,
 } from '../../lib/usersApi'
 
+<<<<<<< Updated upstream
 const STATUSES = ['pending', 'active', 'suspended', 'rejected'] as const
 
+=======
+>>>>>>> Stashed changes
 export function TenantAdminUsersPage() {
   const { token } = useAuth()
   const [users, setUsers] = useState<OrgUser[]>([])
@@ -18,7 +21,10 @@ export function TenantAdminUsersPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
+<<<<<<< Updated upstream
   const [addRole, setAddRole] = useState<OrgUser['orgRole']>('member')
+=======
+>>>>>>> Stashed changes
 
   async function load() {
     if (!token) return
@@ -26,7 +32,10 @@ export function TenantAdminUsersPage() {
     try {
       const data = await fetchOrgUsers(token)
       setUsers(data.users)
+<<<<<<< Updated upstream
       setError('')
+=======
+>>>>>>> Stashed changes
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load users')
     } finally {
@@ -34,13 +43,25 @@ export function TenantAdminUsersPage() {
     }
   }
 
+<<<<<<< Updated upstream
   useEffect(() => { void load() }, [token])
+=======
+  useEffect(() => {
+    void load()
+  }, [token])
+>>>>>>> Stashed changes
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     if (!token) return
+<<<<<<< Updated upstream
     try {
       await createOrgUser(token, { email, password, displayName, orgRole: addRole })
+=======
+    setError('')
+    try {
+      await createOrgUser(token, { email, password, displayName })
+>>>>>>> Stashed changes
       setEmail('')
       setPassword('')
       setDisplayName('')
@@ -50,20 +71,34 @@ export function TenantAdminUsersPage() {
     }
   }
 
+<<<<<<< Updated upstream
   async function setStatus(id: string, status: OrgUser['status']) {
     if (!token) return
     try {
       await updateOrgUserStatus(token, id, status)
+=======
+  async function setStatus(userId: string, status: string) {
+    if (!token) return
+    try {
+      await updateOrgUserStatus(token, userId, status)
+>>>>>>> Stashed changes
       await load()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update status')
     }
   }
 
+<<<<<<< Updated upstream
   async function handleRemove(id: string) {
     if (!token || !confirm('Remove this user from the organization?')) return
     try {
       await deleteOrgUser(token, id)
+=======
+  async function removeUser(userId: string) {
+    if (!token) return
+    try {
+      await deleteOrgUser(token, userId)
+>>>>>>> Stashed changes
       await load()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to remove user')
@@ -72,6 +107,7 @@ export function TenantAdminUsersPage() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-auto p-6">
+<<<<<<< Updated upstream
       <h1 className="mb-1 text-xl font-semibold" style={{ color: 'var(--md-on-surface)' }}>Users</h1>
       <p className="mb-6 text-sm" style={{ color: 'var(--md-on-surface-variant)' }}>
         Manage members in your organization.
@@ -102,11 +138,41 @@ export function TenantAdminUsersPage() {
                 <th className="px-4 py-3">Role</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Actions</th>
+=======
+      <h1 className="text-xl font-semibold" style={{ color: 'var(--md-on-surface)' }}>
+        Organization users
+      </h1>
+      {error && <p className="mt-2 text-sm" style={{ color: 'var(--md-error)' }}>{error}</p>}
+
+      <form onSubmit={handleCreate} className="mt-6 grid max-w-xl gap-3">
+        <h2 className="text-sm font-medium" style={{ color: 'var(--md-on-surface-variant)' }}>
+          Create user
+        </h2>
+        <input className="md-field-input" placeholder="Display name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required />
+        <input className="md-field-input" type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <input className="md-field-input" type="password" placeholder="Password (min 8)" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
+        <button type="submit" className="md-btn md-btn-filled w-fit">Add user</button>
+      </form>
+
+      <div className="mt-8">
+        {loading ? (
+          <p style={{ color: 'var(--md-on-surface-variant)' }}>Loading…</p>
+        ) : (
+          <table className="w-full max-w-4xl text-sm">
+            <thead>
+              <tr style={{ color: 'var(--md-on-surface-variant)', textAlign: 'left' }}>
+                <th className="pb-2">Name</th>
+                <th className="pb-2">Email</th>
+                <th className="pb-2">Role</th>
+                <th className="pb-2">Status</th>
+                <th className="pb-2">Actions</th>
+>>>>>>> Stashed changes
               </tr>
             </thead>
             <tbody>
               {users.map((u) => (
                 <tr key={u.id} style={{ borderTop: '1px solid var(--md-outline-variant)' }}>
+<<<<<<< Updated upstream
                   <td className="px-4 py-3">{u.displayName}</td>
                   <td className="px-4 py-3">{u.email}</td>
                   <td className="px-4 py-3">{u.orgRole}</td>
@@ -121,11 +187,37 @@ export function TenantAdminUsersPage() {
                   </td>
                   <td className="px-4 py-3">
                     <button type="button" className="md-btn md-btn-text" onClick={() => void handleRemove(u.id)}>Remove</button>
+=======
+                  <td className="py-2">{u.displayName}</td>
+                  <td className="py-2">{u.email}</td>
+                  <td className="py-2">{u.orgRole}</td>
+                  <td className="py-2">{u.status}</td>
+                  <td className="py-2 flex flex-wrap gap-2">
+                    {u.status === 'pending' && (
+                      <button type="button" className="md-btn md-btn-tonal text-xs" onClick={() => void setStatus(u.id, 'active')}>
+                        Approve
+                      </button>
+                    )}
+                    {u.status === 'active' && (
+                      <button type="button" className="md-btn md-btn-outlined text-xs" onClick={() => void setStatus(u.id, 'suspended')}>
+                        Suspend
+                      </button>
+                    )}
+                    {u.status === 'suspended' && (
+                      <button type="button" className="md-btn md-btn-tonal text-xs" onClick={() => void setStatus(u.id, 'active')}>
+                        Reactivate
+                      </button>
+                    )}
+                    <button type="button" className="md-btn md-btn-error text-xs" onClick={() => void removeUser(u.id)}>
+                      Remove
+                    </button>
+>>>>>>> Stashed changes
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+<<<<<<< Updated upstream
         </div>
       )}
     </div>
@@ -143,6 +235,10 @@ function Banner({ type, children }: { type: 'error'; children: React.ReactNode }
       }}
     >
       {children}
+=======
+        )}
+      </div>
+>>>>>>> Stashed changes
     </div>
   )
 }

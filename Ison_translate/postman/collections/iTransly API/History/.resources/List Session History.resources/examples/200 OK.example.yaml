@@ -1,0 +1,35 @@
+$kind: http-example
+name: 200 OK
+request:
+  method: GET
+  url: '{{baseUrl}}/api/history/sessions'
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "page": 1,
+        "limit": 20,
+        "total": 2,
+        "sessions": [
+          {
+            "sessionId": "sess_xK9mP2qR7nL4wT8v",
+            "status": "ended",
+            "startedAt": "2024-01-15T10:05:00.000Z",
+            "endedAt": "2024-01-15T10:35:00.000Z",
+            "participantCount": 2
+          },
+          {
+            "sessionId": "sess_aB3cD4eF5gH6iJ7k",
+            "status": "ended",
+            "startedAt": "2024-01-14T09:00:00.000Z",
+            "endedAt": "2024-01-14T09:20:00.000Z",
+            "participantCount": 2
+          }
+        ]
+      }

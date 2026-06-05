@@ -1,0 +1,12 @@
+$kind: http-request
+name: Download Session Audio
+method: GET
+url: '{{baseUrl}}/api/history/sessions/{{sessionId}}/audio/{{recordingId}}'
+description: Downloads the audio recording file (audio/wav) for a specific recording within a session.
+order: 3000
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'
+examples: './.resources/Download Session Audio.resources/examples'

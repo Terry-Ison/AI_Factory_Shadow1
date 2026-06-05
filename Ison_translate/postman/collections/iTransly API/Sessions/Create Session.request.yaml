@@ -1,0 +1,15 @@
+$kind: http-request
+name: Create Session
+method: POST
+url: '{{baseUrl}}/api/sessions'
+description: Creates a new translation session. On success, saves the returned sessionId to `{{sessionId}}` in the active environment.
+order: 1000
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const json = pm.response.json();
+      if (json.sessionId) {
+        pm.environment.set("sessionId", json.sessionId);
+      }
+examples: './.resources/Create Session.resources/examples'

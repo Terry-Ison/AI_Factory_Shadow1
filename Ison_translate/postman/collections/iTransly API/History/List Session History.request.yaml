@@ -1,0 +1,17 @@
+$kind: http-request
+name: List Session History
+method: GET
+url: '{{baseUrl}}/api/history/sessions'
+description: Returns a paginated list of the authenticated user's past translation sessions.
+order: 1000
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{authToken}}'
+queryParams:
+  - key: page
+    value: '1'
+  - key: limit
+    value: '20'
+examples: './.resources/List Session History.resources/examples'

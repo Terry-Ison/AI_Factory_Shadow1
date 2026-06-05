@@ -1,0 +1,17 @@
+$kind: http-example
+name: 429 Too Many Requests
+request:
+  method: POST
+  url: '{{baseUrl}}/api/sessions'
+response:
+  statusCode: 429
+  statusText: Too Many Requests
+  headers:
+    - key: Content-Type
+      value: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "error": "Too many requests. Please try again later."
+      }

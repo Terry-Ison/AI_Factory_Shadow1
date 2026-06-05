@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import {
   BarChart3,
   Building2,
@@ -9,6 +10,9 @@ import {
   User,
   Users,
 } from 'lucide-react'
+=======
+import { BarChart3, Building2, History, KeyRound, LogOut, Mic, Shield, User, Users } from 'lucide-react'
+>>>>>>> Stashed changes
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
@@ -17,7 +21,11 @@ type Props = {
 }
 
 export function Sidebar({ collapsed }: Props) {
+<<<<<<< Updated upstream
   const { user, isGuest, isSuperAdmin, isTenantAdmin, canAccessHistory, logout } = useAuth()
+=======
+  const { user, isGuest, logout, isTenantAdmin, isSuperAdmin, canAccessHistory } = useAuth()
+>>>>>>> Stashed changes
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -70,10 +78,15 @@ export function Sidebar({ collapsed }: Props) {
             onClick={() => navigate('/app/history')}
           />
         )}
+<<<<<<< Updated upstream
 
         {isTenantAdmin && (
           <>
             {!collapsed && <SectionLabel>Admin</SectionLabel>}
+=======
+        {isTenantAdmin && (
+          <>
+>>>>>>> Stashed changes
             <NavItem
               icon={<Users size={20} />}
               label="Users"
@@ -97,10 +110,15 @@ export function Sidebar({ collapsed }: Props) {
             />
           </>
         )}
+<<<<<<< Updated upstream
 
         {isSuperAdmin && (
           <>
             {!collapsed && <SectionLabel>Super admin</SectionLabel>}
+=======
+        {isSuperAdmin && (
+          <>
+>>>>>>> Stashed changes
             <NavItem
               icon={<Building2 size={20} />}
               label="Organizations"
@@ -109,6 +127,7 @@ export function Sidebar({ collapsed }: Props) {
               onClick={() => navigate('/app/super-admin/organizations')}
             />
             <NavItem
+<<<<<<< Updated upstream
               icon={<Users size={20} />}
               label="All users"
               collapsed={collapsed}
@@ -116,6 +135,8 @@ export function Sidebar({ collapsed }: Props) {
               onClick={() => navigate('/app/super-admin/users')}
             />
             <NavItem
+=======
+>>>>>>> Stashed changes
               icon={<Shield size={20} />}
               label="Provider catalog"
               collapsed={collapsed}

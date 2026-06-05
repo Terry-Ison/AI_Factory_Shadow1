@@ -1,0 +1,7 @@
+$kind: http-request
+name: Health Check
+method: GET
+url: '{{baseUrl}}/health'
+description: Returns the overall health of the API server, including DeepL and database connectivity status.
+order: 1000
+examples: './.resources/Health Check.resources/examples'

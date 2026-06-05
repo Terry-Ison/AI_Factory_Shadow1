@@ -3,9 +3,15 @@ import { useAuth } from '../../context/AuthContext'
 import { fetchAnalytics, type Analytics } from '../../lib/adminApi'
 
 function formatDuration(ms: number) {
+<<<<<<< Updated upstream
   const mins = Math.floor(ms / 60000)
   if (mins < 60) return `${mins} min`
   return `${Math.floor(mins / 60)}h ${mins % 60}m`
+=======
+  const mins = Math.round(ms / 60000)
+  if (mins < 60) return `${mins} min`
+  return `${(mins / 60).toFixed(1)} hr`
+>>>>>>> Stashed changes
 }
 
 function formatBytes(n: number) {
@@ -20,11 +26,16 @@ export function TenantAdminAnalyticsPage() {
 
   useEffect(() => {
     if (!token) return
+<<<<<<< Updated upstream
     fetchAnalytics(token)
+=======
+    void fetchAnalytics(token)
+>>>>>>> Stashed changes
       .then(setData)
       .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load analytics'))
   }, [token])
 
+<<<<<<< Updated upstream
   if (error) {
     return (
       <div className="p-6">
@@ -73,7 +84,60 @@ export function TenantAdminAnalyticsPage() {
             ))}
           </ul>
         </section>
+=======
+  return (
+    <div className="flex min-h-0 flex-1 flex-col overflow-auto p-6">
+      <h1 className="text-xl font-semibold" style={{ color: 'var(--md-on-surface)' }}>
+        Organization analytics
+      </h1>
+      {error && <p className="mt-2 text-sm" style={{ color: 'var(--md-error)' }}>{error}</p>}
+      {!data ? (
+        <p className="mt-4" style={{ color: 'var(--md-on-surface-variant)' }}>Loading…</p>
+      ) : (
+        <>
+          <p className="mt-2 text-sm" style={{ color: 'var(--md-on-surface-variant)' }}>
+            {new Date(data.from).toLocaleDateString()} – {new Date(data.to).toLocaleDateString()}
+          </p>
+          <div className="mt-6 grid max-w-3xl grid-cols-2 gap-4 sm:grid-cols-3">
+            <Stat label="Sessions" value={String(data.sessionCount)} />
+            <Stat label="Ended sessions" value={String(data.endedSessionCount)} />
+            <Stat label="Total duration" value={formatDuration(data.totalDurationMs)} />
+            <Stat label="Active members" value={String(data.activeMembers)} />
+            <Stat label="Pending members" value={String(data.pendingMembers)} />
+            <Stat label="Transcript segments" value={String(data.transcriptSegmentCount)} />
+            <Stat label="Recordings" value={String(data.recordingCount)} />
+            <Stat label="Recording storage" value={formatBytes(data.recordingBytes)} />
+          </div>
+          {Object.keys(data.languagePairs).length > 0 && (
+            <div className="mt-8">
+              <h2 className="text-sm font-medium" style={{ color: 'var(--md-on-surface-variant)' }}>
+                Language pairs
+              </h2>
+              <ul className="mt-2 space-y-1 text-sm">
+                {Object.entries(data.languagePairs).map(([pair, count]) => (
+                  <li key={pair}>{pair}: {count}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </>
+>>>>>>> Stashed changes
       )}
     </div>
   )
 }
+<<<<<<< Updated upstream
+=======
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div
+      className="rounded-xl p-4"
+      style={{ background: 'var(--md-surface-container)', borderRadius: 'var(--shape-lg)' }}
+    >
+      <p className="text-xs" style={{ color: 'var(--md-on-surface-variant)' }}>{label}</p>
+      <p className="mt-1 text-lg font-semibold" style={{ color: 'var(--md-on-surface)' }}>{value}</p>
+    </div>
+  )
+}
+>>>>>>> Stashed changes

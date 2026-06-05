@@ -1,16 +1,22 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
+<<<<<<< Updated upstream
 import { AdminTable } from '../../components/admin/AdminTable'
 import { AdminViewToggle } from '../../components/admin/AdminViewToggle'
 import { useAdminViewMode } from '../../components/admin/useAdminViewMode'
 import {
   createVoiceProvider,
   deleteVoiceProvider,
+=======
+import {
+  createVoiceProvider,
+>>>>>>> Stashed changes
   fetchVoiceProviders,
   updateVoiceProvider,
   type VoiceProvider,
 } from '../../lib/adminApi'
 
+<<<<<<< Updated upstream
 function keyLabel(p: VoiceProvider) {
   if (p.apiKeyPreview) return p.apiKeyPreview
   if (p.hasApiKey) return '••••••••'
@@ -42,12 +48,39 @@ export function SuperAdminVoiceProvidersPage() {
   }
 
   useEffect(() => { void load() }, [token])
+=======
+export function SuperAdminVoiceProvidersPage() {
+  const { token } = useAuth()
+  const [providers, setProviders] = useState<VoiceProvider[]>([])
+  const [name, setName] = useState('')
+  const [apiUrl, setApiUrl] = useState('https://api.deepl.com')
+  const [apiKey, setApiKey] = useState('')
+  const [error, setError] = useState('')
+
+  async function load() {
+    if (!token) return
+    const data = await fetchVoiceProviders(token)
+    setProviders(data.providers)
+  }
+
+  useEffect(() => {
+    void load().catch((err) =>
+      setError(err instanceof Error ? err.message : 'Failed to load'),
+    )
+  }, [token])
+>>>>>>> Stashed changes
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     if (!token) return
+<<<<<<< Updated upstream
     try {
       await createVoiceProvider(token, { name, apiUrl, apiKey, type: 'deepl' })
+=======
+    setError('')
+    try {
+      await createVoiceProvider(token, { name, type: 'deepl', apiUrl, apiKey })
+>>>>>>> Stashed changes
       setName('')
       setApiKey('')
       await load()
@@ -58,6 +91,7 @@ export function SuperAdminVoiceProvidersPage() {
 
   async function toggleActive(p: VoiceProvider) {
     if (!token) return
+<<<<<<< Updated upstream
     try {
       await updateVoiceProvider(token, p.id, { isActive: !p.isActive })
       await load()
@@ -143,10 +177,15 @@ export function SuperAdminVoiceProvidersPage() {
         )}
       </div>
     )
+=======
+    await updateVoiceProvider(token, p.id, { isActive: !p.isActive })
+    await load()
+>>>>>>> Stashed changes
   }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-auto p-6">
+<<<<<<< Updated upstream
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="mb-1 text-xl font-semibold" style={{ color: 'var(--md-on-surface)' }}>Provider catalog</h1>
@@ -314,6 +353,30 @@ export function SuperAdminVoiceProvidersPage() {
           </form>
         </div>
       )}
+=======
+      <h1 className="text-xl font-semibold" style={{ color: 'var(--md-on-surface)' }}>
+        Voice provider catalog
+      </h1>
+      {error && <p className="mt-2 text-sm" style={{ color: 'var(--md-error)' }}>{error}</p>}
+
+      <form onSubmit={handleCreate} className="mt-6 grid max-w-xl gap-3">
+        <input className="md-field-input" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} required />
+        <input className="md-field-input" placeholder="API URL" value={apiUrl} onChange={(e) => setApiUrl(e.target.value)} required />
+        <input className="md-field-input" type="password" placeholder="API key" value={apiKey} onChange={(e) => setApiKey(e.target.value)} required />
+        <button type="submit" className="md-btn md-btn-filled w-fit">Add provider</button>
+      </form>
+
+      <ul className="mt-8 max-w-xl space-y-2">
+        {providers.map((p) => (
+          <li key={p.id} className="flex items-center justify-between rounded-lg p-3" style={{ background: 'var(--md-surface-container)' }}>
+            <span>{p.name} ({p.type}) {p.isActive ? '' : '— inactive'}</span>
+            <button type="button" className="md-btn md-btn-outlined text-xs" onClick={() => void toggleActive(p)}>
+              {p.isActive ? 'Deactivate' : 'Activate'}
+            </button>
+          </li>
+        ))}
+      </ul>
+>>>>>>> Stashed changes
     </div>
   )
 }
