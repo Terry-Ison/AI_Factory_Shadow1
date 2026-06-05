@@ -49,7 +49,7 @@ export function Navbar() {
       </span>
 
       {/* Theme toggle */}
-      <button
+      {/* <button
         className="md-icon-btn"
         onClick={toggleTheme}
         title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
@@ -57,7 +57,7 @@ export function Navbar() {
         style={{ color: 'var(--md-on-surface-variant)' }}
       >
         {theme === 'dark' ? <Sun size={22} /> : <Moon size={22} />}
-      </button>
+      </button> */}
     </header>
   )
 }

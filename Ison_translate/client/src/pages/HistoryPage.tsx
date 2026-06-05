@@ -12,7 +12,7 @@ import {
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { TablePagination } from '@/components/ui/TablePagination'
 import { cn } from '@/lib/utils'
@@ -127,12 +127,12 @@ function SessionsTable({
               <TableCell className="pl-4">
                 <div className="flex min-w-0 items-center gap-3">
                   <span
-                    className="flex h-9 w-9 shrink-0 items-center justify-center"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center bg-accent"
                     style={{
-                      background:
-                        session.status === 'active'
-                          ? 'var(--md-primary-container)'
-                          : 'var(--md-surface-container-high)',
+                      // background:
+                      //   session.status === 'active'
+                      //     ? 'var(--md-primary-container)'
+                      //     : 'var(--md-surface-container-high)',
                       borderRadius: 'var(--shape-sm)',
                       color:
                         session.status === 'active'
@@ -339,16 +339,18 @@ export function HistoryPage() {
             <Select value={filter} onValueChange={(value) => setFilter(value as HistoryFilter)}>
               <SelectTrigger
                 size="default"
-                className="py-2 gap-2 border-[var(--md-outline-variant)] bg-[var(--md-surface-container)] px-3 text-[var(--md-on-surface)] shadow-none hover:bg-[var(--md-surface-container-high)]"
+                className="py-2 gap-2 border-[var(--md-outline-variant)] bg-accent text-accent-foreground px-3 text-[var(--md-on-surface)] shadow-none hover:bg-[var(--md-surface-container-high)]"
               >
                 <SelectValue placeholder="Filter" />
               </SelectTrigger>
-              <SelectContent align="end" className="min-w-[9.5rem]">
-                {filters.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
+              <SelectContent align="end" className="min-w-fit p-2">
+                <SelectGroup>
+                  {filters.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
                     </SelectItem>
-                ))}
+                  ))}
+                </SelectGroup>
               </SelectContent>
             </Select>
           </div>

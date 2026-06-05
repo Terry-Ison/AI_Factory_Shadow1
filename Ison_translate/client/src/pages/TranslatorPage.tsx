@@ -431,7 +431,7 @@ export function TranslatorPage() {
             }
           />
           <SubtitlePanel
-            title="Partner said (translated)"
+            title="Partner said (Translated)"
             badge={badges.partner}
             lines={partnerLines}
             emptyText={

@@ -180,8 +180,8 @@ function NavItem({ icon, label, collapsed, active, onClick }: NavItemProps) {
       aria-label={label}
       className="flex w-full items-center gap-3 text-sm font-medium rounded-lg justify-start"
       style={{
-        height: '2.3rem',
-        padding: collapsed ? '0' : '12px',
+        // height: '2.3rem',
+        padding: collapsed ? '12px' : '12px',
         justifyContent: collapsed ? 'center' : 'flex-start',
         background: active
           ? 'var(--accent)'
